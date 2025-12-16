@@ -1,52 +1,54 @@
-import { createContext, useState, useEffect } from 'react';
-import axios from 'axios';
+// src/context/AuthContext.jsx - VERIFY THIS CODE EXACTLY
+import React, { createContext, useContext, useState, useEffect } from 'react';
 
+// 1. Create the Context
 const AuthContext = createContext();
 
+// 2. Create a custom hook and EXPORT it
+export const useAuth = () => useContext(AuthContext); 
+
+// 3. Create the Provider component and EXPORT it
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+    // State to hold the user information (null if not logged in)
+    const [user, setUser] = useState(null);
+    const [loading, setLoading] = useState(true);
 
-  // Check if user is logged in when app loads
-  useEffect(() => {
-    const checkLoggedIn = async () => {
-      const token = localStorage.getItem('token');
-      if (token) {
-        try {
-          const config = { headers: { Authorization: `Bearer ${token}` } };
-          const res = await axios.get('http://localhost:5000/api/auth/me', config);
-          setUser(res.data);
-        } catch (error) {
-          localStorage.removeItem('token');
-        }
-      }
-      setLoading(false);
+    // Mock function for login
+    const login = (userData) => {
+        setUser(userData);
+        localStorage.setItem('civix_user', JSON.stringify(userData));
     };
-    checkLoggedIn();
-  }, []);
 
-  const login = async (formData) => {
-    const res = await axios.post('http://localhost:5000/api/auth/login', formData);
-    localStorage.setItem('token', res.data.token);
-    setUser(res.data);
-  };
+    // Mock function for logout
+    const logout = () => {
+        setUser(null);
+        localStorage.removeItem('civix_user');
+    };
 
-  const register = async (formData) => {
-    const res = await axios.post('http://localhost:5000/api/auth/register', formData);
-    localStorage.setItem('token', res.data.token);
-    setUser(res.data);
-  };
+    // Check for user data on initial load (loading state management)
+    useEffect(() => {
+        const storedUser = localStorage.getItem('civix_user');
+        if (storedUser) {
+            setUser(JSON.parse(storedUser));
+        }
+        setLoading(false);
+    }, []);
 
-  const logout = () => {
-    localStorage.removeItem('token');
-    setUser(null);
-  };
+    // The context value provides the state and functions
+    const value = {
+        user,
+        loading,
+        isAuthenticated: !!user,
+        login,
+        logout,
+        isOfficial: user ? user.role === 'official' : false,
+        location: user ? user.location : null,
+    };
 
-  return (
-    <AuthContext.Provider value={{ user, login, register, logout, loading }}>
-      {children}
-    </AuthContext.Provider>
-  );
+    return (
+        <AuthContext.Provider value={value}>
+            {/* Render children only when loading is complete */}
+            {!loading ? children : <div>Loading...</div>} 
+        </AuthContext.Provider>
+    );
 };
-
-export default AuthContext;
