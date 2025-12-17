@@ -17,6 +17,7 @@ const Login = () => {
     }
   };
 
+  
   return (
     <div className="auth-container" style={{ padding: '20px' }}>
       <h2>Login to Civix</h2>
