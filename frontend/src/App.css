@@ -1,79 +1,102 @@
-/* Add to your App.css or index.css */
-
-/* --- New Layout Container (Outer Box) --- */
-.login-page-container {
-    display: flex;
-    max-width: 900px; /* Adjust size to fit both panels */
-    margin: 60px auto;
-    border-radius: 12px;
-    overflow: hidden; 
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15); 
-    background-color: white;
+/* src/index.css */
+:root {
+  --primary-color: #1a237e; /* Deep Navy Blue Shade */
+  --accent-color: #283593;
+  --text-white: #ffffff;
+  --bg-light: #f8f9fa;
 }
 
-/* --- Blue Marketing Panel (Left Side) --- */
-.marketing-panel {
-    width: 40%;
-    padding: 40px;
-    background-color: #007bff; /* Civix Blue */
-    color: white;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-.marketing-title {
-    font-size: 32px;
-    margin-bottom: 5px;
+.auth-page-wrapper {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
 }
 
-.marketing-subtitle {
-    font-size: 18px;
-    font-weight: 300;
-    margin-bottom: 20px;
+/* Left Panel: Deep Navy Side */
+.info-sidebar {
+  flex: 1.2;
+  background-color: var(--primary-color);
+  color: var(--text-white);
+  padding: 80px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
-.marketing-text {
-    font-size: 14px;
-    line-height: 1.6;
-    margin-bottom: 25px;
+.brand-section h1 {
+  font-size: 48px;
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.brand-section h2 {
+  font-size: 26px;
+  font-weight: 400;
+  margin-bottom: 25px;
+  color: #c5cae9;
+}
+
+.brand-description {
+  font-size: 16px;
+  line-height: 1.8;
+  margin-bottom: 50px;
+  opacity: 0.9;
 }
 
 .feature-list {
-    list-style: none;
-    padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
 }
 
-.feature-list li {
-    font-size: 15px;
-    margin-bottom: 12px;
-    font-weight: 500;
-    position: relative;
-    padding-left: 25px;
-}
-/* Simple checkmark icon */
-.feature-list li::before {
-    content: '✅'; 
-    position: absolute;
-    left: 0;
-    font-size: 14px;
+.feature-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
 }
 
-
-/* --- Form Panel (Right Side) --- */
-.auth-form-panel {
-    width: 60%;
-    padding: 40px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
+.feature-icon-box {
+  background: rgba(255, 255, 255, 0.15);
+  padding: 12px;
+  border-radius: 10px;
+  font-size: 22px;
 }
 
-/* Ensure the inner container respects the new layout */
-.auth-container { 
-    max-width: 100%;
-    margin: 0; 
-    padding: 0;
-    box-shadow: none; 
-    border-radius: 0;
+.feature-item h4 {
+  margin-bottom: 5px;
+  font-size: 18px;
+}
+
+.feature-item p {
+  font-size: 14px;
+  opacity: 0.8;
+  line-height: 1.5;
+}
+
+/* Right Panel: White Form Side */
+.form-section {
+  flex: 1;
+  background-color: var(--bg-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+}
+
+.auth-card {
+  background: white;
+  padding: 45px;
+  border-radius: 15px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+  width: 100%;
+  max-width: 480px;
 }
