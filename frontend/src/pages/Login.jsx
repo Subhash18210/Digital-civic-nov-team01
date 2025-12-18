@@ -16,6 +16,7 @@ const LoginPage = ({ onNavigateToRegister }) => {
     }
   };
 
+  
   return (
     <div className="auth-page-wrapper">
       <div className="info-sidebar">
