@@ -15,7 +15,7 @@ const userSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 // Pre-save hook to hash password (Checklist 2)
-// ✅ MODERN SYNTAX (No 'next' parameter needed)
+// MODERN SYNTAX (No 'next' parameter needed)
 userSchema.pre('save', async function() { 
   // 1. If password wasn't changed, do nothing
   if (!this.isModified('password')) return;
