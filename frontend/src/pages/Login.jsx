@@ -1,22 +1,31 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import '../App.css';
 
-const LoginPage = ({ onNavigateToRegister }) => {
+const LoginPage = () => {
   const { login } = useAuth();
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    setError('');
+    setLoading(true);
     try {
       await login({ email, password });
+      // Redirect to dashboard after successful login
+      navigate('/dashboard', { replace: true });
     } catch (err) {
-      alert(err.message);
+      setError(err?.message || 'Failed to sign in. Please check your credentials.');
+    } finally {
+      setLoading(false);
     }
   };
 
-  
   return (
     <div className="auth-page-wrapper">
       <div className="info-sidebar">
@@ -64,22 +73,52 @@ const LoginPage = ({ onNavigateToRegister }) => {
           
           <div className="auth-tabs" style={{display: 'flex', borderBottom: '1px solid #ddd', marginBottom: '25px'}}>
             <button className="auth-tab active" style={{flex: 1, padding: '12px', border: 'none', background: 'none', borderBottom: '2px solid var(--primary-color)', fontWeight: 'bold', color: 'var(--primary-color)'}}>Login</button>
-            <button className="auth-tab" onClick={onNavigateToRegister} style={{flex: 1, padding: '12px', border: 'none', background: 'none', cursor: 'pointer', color: '#666'}}>Register</button>
+            <button className="auth-tab" onClick={() => navigate('/register')} style={{flex: 1, padding: '12px', border: 'none', background: 'none', cursor: 'pointer', color: '#666'}}>Register</button>
           </div>
 
           <form onSubmit={handleLogin}>
             <div className="form-group" style={{marginBottom: '20px'}}>
               <label style={{display: 'block', marginBottom: '8px', fontWeight: '600'}}>Email</label>
-              <input type="email" placeholder="your@email.com" value={email} onChange={(e) => setEmail(e.target.value)} required style={{width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #ddd'}} />
+              <input
+                type="email"
+                placeholder="your@email.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                style={{width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #ddd'}}
+                aria-label="Email"
+              />
             </div>
             <div className="form-group" style={{marginBottom: '25px'}}>
               <label style={{display: 'block', marginBottom: '8px', fontWeight: '600'}}>Password</label>
-              <input type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required style={{width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #ddd'}} />
+              <input
+                type="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                style={{width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #ddd'}}
+                aria-label="Password"
+              />
             </div>
-            <button type="submit" className="primary-button" style={{width: '100%', padding: '14px', background: 'var(--primary-color)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer'}}>Sign In</button>
+
+            {error && (
+              <div style={{color: 'var(--error-color, #c0392b)', marginBottom: '16px', textAlign: 'center'}}>
+                {error}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              className="primary-button"
+              style={{width: '100%', padding: '14px', background: 'var(--primary-color)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: loading ? 'not-allowed' : 'pointer'}}
+              disabled={loading}
+            >
+              {loading ? 'Signing in...' : 'Sign In'}
+            </button>
           </form>
           <p style={{textAlign: 'center', marginTop: '20px', fontSize: '14px'}}>
-            Don't have an account? <span onClick={onNavigateToRegister} style={{color: 'var(--primary-color)', fontWeight: 'bold', cursor: 'pointer'}}>Register now</span>
+            Don't have an account? <span onClick={() => navigate('/register')} style={{color: 'var(--primary-color)', fontWeight: 'bold', cursor: 'pointer'}}>Register now</span>
           </p>
         </div>
       </div>

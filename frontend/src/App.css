@@ -6,12 +6,6 @@
   --bg-light: #f8f9fa;
 }
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-}
 
 .auth-page-wrapper {
   display: flex;

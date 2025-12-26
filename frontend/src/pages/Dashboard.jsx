@@ -1,10 +1,14 @@
 import React, { useState, useRef, useEffect } from "react";
 import { getUser } from "../utls/auth";
+import { useNavigate } from "react-router-dom";
+import '../index.css'
+import PetitionList from './petitionList.jsx'; // add import
+import PollsPage from './poll.jsx';
 
 export default function Dashboard() {
   const user = getUser();
+  const navigate = useNavigate();
 
-  
   const displayName =
     user?.name || user?.fullName || user?.username || "User";
   const initial = displayName ? displayName.charAt(0).toUpperCase() : "U";
@@ -24,7 +28,6 @@ export default function Dashboard() {
     "Settings",
   ];
 
-  
   const categories = [
     "All Categories",
     "Environment",
@@ -36,7 +39,6 @@ export default function Dashboard() {
     "Housing",
   ];
   const [selectedCategory, setSelectedCategory] = useState("All Categories");
-
 
   const mockPetitions = [
     {
@@ -65,7 +67,6 @@ export default function Dashboard() {
     },
   ];
 
-
   const filteredPetitions =
     selectedCategory === "All Categories"
       ? mockPetitions
@@ -78,7 +79,6 @@ export default function Dashboard() {
     setSelectedPetition(null);
   }
 
- 
   const mockNotifications = user?.notifications || [
     { id: "n1", text: "New signature on 'Fix potholes on 5th Avenue'", unread: true },
     { id: "n2", text: "Petition 'Increase tree coverage' reached 300 signatures", unread: false },
@@ -97,21 +97,36 @@ export default function Dashboard() {
     return () => document.removeEventListener("click", handleDocClick);
   }, []);
 
+  // responsive sidebar state
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
   return (
     <div className="min-h-screen bg-[#f7f8fa]">
       {/* TOP NAVBAR */}
-      <header className="h-14 bg-white shadow-sm flex items-center justify-between px-6">
+      <header className="h-14 bg-white shadow-sm flex items-center justify-between px-4 md:px-6">
         <div className="flex items-center gap-3">
-          <div className="text-blue-600 text-2xl">🏛️</div>
-          <span className="font-semibold text-2xl text-blue-600 flex items-center gap-2">
+          {/* Mobile hamburger */}
+          <button
+            className="md:hidden p-2 rounded-md hover:bg-gray-100"
+            onClick={() => setSidebarOpen((s) => !s)}
+            aria-label="Toggle menu"
+          >
+            <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+
+          <div className="text-blue-600 text-2xl md:text-3xl">🏛️</div>
+          <span className="font-semibold text-2xl md:text-3xl text-blue-600 flex items-center gap-2">
             Civix
-            <span className="text-xs text-gray-700 bg-gray-200 px-2 py-0.5 rounded-full">
+            <span className="text-xs md:text-sm text-gray-700 bg-gray-200 px-2 py-0.5 rounded-full">
               Beta
             </span>
           </span>
         </div>
 
-        <nav className="flex gap-8 text-sm">
+        {/* top nav - small screens allowed to scroll horizontally */}
+        <nav className="hidden sm:flex gap-6 text-sm md:gap-8 md:text-base overflow-x-auto flex-shrink-0">
           {topNavItems.map((item) => (
             <button
               key={item}
@@ -148,7 +163,7 @@ export default function Dashboard() {
 
           {/* Notifications dropdown */}
           {showNotifications && (
-            <div className="absolute right-0 mt-12 w-80 bg-white rounded-lg shadow-lg border border-gray-100 z-50">
+            <div className="absolute right-0 mt-12 w-72 md:w-80 bg-white rounded-lg shadow-lg border border-gray-100 z-50">
               <div className="p-3 border-b text-sm font-medium text-gray-700">Notifications</div>
               <div className="max-h-56 overflow-auto">
                 {mockNotifications.length === 0 ? (
@@ -172,33 +187,24 @@ export default function Dashboard() {
             </div>
           )}
 
-          
           <div className="w-7 h-7 rounded-full bg-gray-200 flex items-center justify-center text-xs font-medium">
             {initial}
           </div>
-          <span className="text-sm text-gray-700">{displayName}</span>
+          <span className="hidden sm:inline text-sm text-gray-700">{displayName}</span>
         </div>
       </header>
 
-      {/* BODY */}
       <div className="flex">
-        {/* SIDEBAR */}
-        <aside className="w-72 bg-white shadow min-h-[calc(100vh-56px)] p-5">
-          {/* PROFILE */}
-          <div className="flex items-start gap-3 mb-6">
-            <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center font-medium">
-              {initial}
-            </div>
-            <div>
-              <h4 className="text-sm font-semibold text-gray-800">{displayName}</h4>
-              <p className="text-xs text-gray-500">{role}</p>
-              <p className="text-xs text-gray-400 mt-1">📍 {location}</p>
-              <p className="text-xs text-gray-400">{contact}</p>
-            </div>
-          </div>
-
-          {/* MENU */}
-          <nav className="space-y-1 text-sm">
+        {/* Sidebar - desktop */}
+        <aside className="hidden md:block w-72 bg-white shadow min-h-[calc(100vh-56px)] p-5">
+          <ProfileBlock
+            initial={initial}
+            displayName={displayName}
+            role={role}
+            location={location}
+            contact={contact}
+          />
+          <nav className="space-y-1 text-sm mt-2">
             {sidebarItems.map((label) => (
               <MenuItem
                 key={label}
@@ -214,12 +220,44 @@ export default function Dashboard() {
           </div>
         </aside>
 
+        {/* Mobile sidebar drawer */}
+        {sidebarOpen && (
+          <>
+            <div
+              className="fixed inset-0 bg-black/30 z-30 md:hidden"
+              onClick={() => setSidebarOpen(false)}
+            />
+            <aside className="fixed left-0 top-14 bottom-0 w-64 bg-white shadow z-40 p-4 overflow-auto md:hidden">
+              <ProfileBlock
+                initial={initial}
+                displayName={displayName}
+                role={role}
+                location={location}
+                contact={contact}
+              />
+              <nav className="space-y-1 text-sm mt-2">
+                {sidebarItems.map((label) => (
+                  <MenuItem
+                    key={label}
+                    label={label}
+                    active={activeSection === label}
+                    onClick={() => {
+                      setActiveSection(label);
+                      setSidebarOpen(false);
+                    }}
+                  />
+                ))}
+              </nav>
+            </aside>
+          </>
+        )}
+
         {/* MAIN CONTENT */}
         <main className="flex-1 p-6">
           {/* WELCOME */}
-          <div className="bg-white rounded-lg shadow p-5 mb-5 flex justify-between items-center">
+          <div className="bg-white rounded-lg shadow p-4 md:p-5 mb-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
-              <h2 className="text-lg font-semibold text-gray-800">
+              <h2 className="text-lg md:text-xl font-semibold text-gray-800">
                 Welcome back, {displayName}
               </h2>
               <p className="text-sm text-gray-500 mt-1">
@@ -230,126 +268,109 @@ export default function Dashboard() {
               </p>
             </div>
 
-            <button className="text-sm bg-gray-100 text-gray-400 px-4 py-2 rounded-md cursor-not-allowed">
+            <button
+              onClick={() => navigate("/petition")}
+              className="text-sm bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 self-stretch md:self-auto"
+            >
               + Create Petition
             </button>
           </div>
 
           {/* STATS */}
-          <div className="grid grid-cols-3 gap-4 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-6">
             <StatBox title="My Petitions" value={user?.stats?.myPetitions ?? "0"} sub="petitions" />
             <StatBox title="Successful Petitions" value={user?.stats?.successful ?? "0"} sub="or under review" />
             <StatBox title="Polls Created" value={user?.stats?.polls ?? "0"} sub="polls" />
           </div>
 
           {/* ACTIVE PETITIONS */}
-          <div className="bg-white rounded-lg shadow p-5">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="font-semibold text-sm text-gray-800">
-                Active Petitions Near You
-              </h3>
+          {activeSection === "Petitions" ? (
+            <PetitionList />
+          ) : activeSection === "Polls" ? (
+            <PollsPage />
+          ) : (
+            <div className="bg-white rounded-lg shadow p-5">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold text-sm text-gray-800">
+                  Active Petitions Near You
+                </h3>
 
-              <div className="text-xs text-gray-500 flex items-center gap-1">
-                Showing for
-                <span className="text-blue-600 font-medium bg-blue-50-2 py-1 rounded">
-                  {location}
-                </span>
+                <div className="text-xs text-gray-500 flex items-center gap-1">
+                  Showing for
+                  <span className="text-blue-600 font-medium bg-blue-50 px-2 py-1 rounded">
+                    {location}
+                  </span>
+                </div>
               </div>
-            </div>
 
-            {/* FILTERS */}
-            <div className="flex flex-wrap gap-2 mb-4">
-              {categories.map((f) => (
-                <button
-                  key={f}
-                  onClick={() => setSelectedCategory(f)}
-                  className={`text-xs px-4 py-1.5 rounded-full transition-colors
-                    ${
-                      selectedCategory === f
-                        ? "bg-blue-600 text-white border-blue-600"
-                        : "bg-white text-gray-600 hover:bg-gray-100"
-                    }`}
-                >
-                  {f}
-                </button>
-              ))}
-              <button
-                onClick={clearFilters}
-                className="ml-2 text-sm px-4 py-1.5 rounded-md text-gray-600 bg-gray-50 hover:bg-gray-100"
-              >
-                Clear Filters
-              </button>
-            </div>
+              {/* FILTERS */}
+              <div className="flex flex-wrap gap-2 mb-6">
+                {[
+                  "All Categories",
+                  "Environment",
+                  "Infrastructure",
+                  "Education",
+                  "Public Safety",
+                  "Transportation",
+                  "Healthcare",
+                  "Housing",
+                ].map((f, i) => (
+                  <button
+                    key={f}
+                    className={`text-xs px-4 py-1.5 rounded-full border
+                      ${
+                        i === 0
+                          ? "bg-blue-600 text-white border-blue-600"
+                          : "bg-white text-gray-600 hover:bg-gray-100"
+                      }`}
+                  >
+                    {f}
+                  </button>
+                ))}
+              </div>
 
-            {/* PETITIONS LIST + DETAILS */}
-            {filteredPetitions.length === 0 ? (
+              {/* EMPTY */}
               <div className="text-center text-sm text-gray-500 py-10">
                 No petitions found with the current filters.
               </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-3">
-                  {filteredPetitions.map((p) => (
-                    <div
-                      key={p.id}
-                      onClick={() => setSelectedPetition(p)}
-                      role="button"
-                      tabIndex={0}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") setSelectedPetition(p);
-                      }}
-                      className={`p-4 rounded-lg cursor-pointer transition-shadow ${
-                        selectedPetition?.id === p.id
-                          ? "shadow-lg ring-2 ring-blue-100"
-                          : "shadow-sm hover:shadow-md"
-                      } bg-white`}
-                    >
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <div className="text-sm font-semibold text-gray-800">{p.title}</div>
-                          <div className="text-xs text-gray-500 mt-1">{p.summary}</div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-xs text-gray-400">{p.category}</div>
-                          <div className="text-xs text-gray-400 mt-2">{p.signatures} ✍️</div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
 
-                <div>
-                  {selectedPetition ? (
-                    <div className="p-4 bg-white rounded-lg shadow">
-                      <h4 className="font-semibold text-gray-800">{selectedPetition.title}</h4>
-                      <div className="text-xs text-gray-500 mt-1">{selectedPetition.category} • {selectedPetition.location}</div>
-                      <p className="text-sm text-gray-600 mt-3">{selectedPetition.summary}</p>
-                      <div className="mt-4 flex items-center justify-between">
-                        <div className="text-sm text-gray-700">{selectedPetition.signatures} signatures</div>
-                        <button
-                          onClick={() => alert("Sign action (replace with real flow)")}
-                          className="text-sm bg-blue-600 text-white px-3 py-1.5 rounded-md"
-                        >
-                          Sign
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="p-6 bg-white rounded-lg shadow text-sm text-gray-500">
-                      Select a petition to see details.
-                    </div>
-                  )}
-                </div>
+              <div className="flex justify-center">
+                <button
+                  onClick={() => {
+                    /* optional: keep existing clear logic */
+                  }}
+                  className="text-sm border px-4 py-1.5 rounded-md text-gray-600 hover:bg-gray-50"
+                >
+                  Clear Filters
+                </button>
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </main>
       </div>
     </div>
   );
 }
 
-/* ---------- COMPONENTS ---------- */
+/* ---------- SMALL COMPONENTS ---------- */
+
+function ProfileBlock({ initial, displayName, role, location, contact }) {
+  return (
+    <div className="mb-4">
+      <div className="flex items-start gap-3 mb-3">
+        <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center font-medium text-sm">
+          {initial}
+        </div>
+        <div>
+          <h4 className="text-sm font-semibold text-gray-800">{displayName}</h4>
+          <p className="text-xs text-gray-500">{role}</p>
+          <p className="text-xs text-gray-400 mt-1">📍 {location}</p>
+          <p className="text-xs text-gray-400">{contact}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function MenuItem({ label, active, onClick }) {
   return (
@@ -360,7 +381,7 @@ function MenuItem({ label, active, onClick }) {
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") onClick();
       }}
-      className={`px-4 py-2 rounded-md cursor-pointer select-none ${
+      className={`px-3 py-2 rounded-md cursor-pointer select-none ${
         active ? "bg-blue-50 text-blue-600 font-medium" : "text-gray-600 hover:bg-gray-100"
       }`}
     >
