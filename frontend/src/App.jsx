@@ -1,12 +1,12 @@
 import React from "react";
-import { Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom"; // Removed 'BrowserRouter'
 import { AuthProvider } from "./context/AuthContext";
 
 // Components
 import Navbar from "./components/Navbar";
 
 // Pages
-import Home from "./pages/Home";         // Landing Page
+import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
@@ -14,6 +14,7 @@ import Dashboard from "./pages/Dashboard";
 // Petition Pages
 import PetitionList from "./pages/PetitionList";
 import CreatePetition from "./pages/CreatePetition";
+import PetitionDetail from "./pages/PetitionDetail";
 
 // Poll Pages
 import PollList from "./pages/PollList";
@@ -24,6 +25,7 @@ import Reports from "./pages/Reports";
 
 function App() {
   return (
+    // <--- REMOVED <Router> TAGS HERE. 'main.jsx' is likely handling it.
     <AuthProvider>
       <Layout />
     </AuthProvider>
@@ -54,6 +56,7 @@ const Layout = () => {
         
         <Route path="/petitions" element={<PetitionList />} />
         <Route path="/create-petition" element={<CreatePetition />} />
+        <Route path="/petitions/:id" element={<PetitionDetail />} />
 
         <Route path="/polls" element={<PollList />} />
         <Route path="/create-poll" element={<CreatePoll />} />

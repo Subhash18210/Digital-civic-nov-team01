@@ -1,6 +1,7 @@
-import React, { useContext } from "react";
-import { Link } from "react-router-dom";
+import React, { useContext, useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import AuthContext from "../context/AuthContext";
+import API from "../api"; // Import your API helper
 import { 
   LayoutDashboard, FileText, BarChart2, Users, FileBarChart, Settings, 
   HelpCircle, MapPin, Mail 
@@ -8,7 +9,62 @@ import {
 
 export default function Dashboard() {
   const { user } = useContext(AuthContext);
-  const categories = ["All Categories", "Environment", "Infrastructure", "Education", "Public safety", "Others"];
+  const navigate = useNavigate();
+
+  // State to store real data counts
+  const [stats, setStats] = useState({
+    myPetitions: 0,
+    successfulPetitions: 0,
+    pollsCreated: 0
+  });
+
+  const categories = ["Environment", "Infrastructure", "Education", "Public safety", "Health", "Others"];
+
+  // --- FETCH DATA ON LOAD ---
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // 1. Fetch all petitions to calculate stats
+        const { data } = await API.get('/petitions');
+        const allPetitions = data.petitions || [];
+
+        // 2. Calculate "My Petitions" (Created by logged-in user)
+        // Note: backend response usually has creator object or ID. We check both.
+        const myCount = allPetitions.filter(p => 
+           (p.creator?._id === user?._id) || (p.creator === user?._id)
+        ).length;
+
+        // 3. Calculate "Successful" (Status = closed)
+        const successCount = allPetitions.filter(p => p.status === 'closed').length;
+
+        setStats({
+          myPetitions: myCount,
+          successfulPetitions: successCount,
+          pollsCreated: 0 // Placeholder until you build Polls backend
+        });
+
+      } catch (err) {
+        console.error("Error loading dashboard stats:", err);
+      }
+    };
+
+    if (user) fetchData();
+  }, [user]);
+
+  // --- NAVIGATION HANDLERS ---
+  const handleCategoryClick = (category) => {
+    // Navigate to Petitions list with the selected category
+    navigate(`/petitions?category=${category}`);
+  };
+
+  const handleStatClick = (type) => {
+    if (type === 'mine') {
+       // Ideally you'd filter by 'mine' in the list, for now just go to list
+       navigate('/petitions');
+    } else if (type === 'successful') {
+       navigate('/petitions?status=closed');
+    }
+  };
 
   return (
     <div style={styles.container}>
@@ -43,8 +99,6 @@ export default function Dashboard() {
         <div style={styles.banner}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <h2>Welcome to Digital Civic Engagement</h2>
-            
-            {/* DROPDOWN LIST (As per checklist) */}
             <select style={styles.dropdown}>
               <option value="last_30">Last 30 Days</option>
               <option value="last_6_months">Last 6 Months</option>
@@ -53,23 +107,33 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* CLICKABLE STAT BUTTONS */}
+        {/* DYNAMIC STAT BUTTONS */}
         <div style={styles.statsGrid}>
-           <button style={styles.statCard}>
-             <h3>My petitions</h3>
+           <button style={styles.statCard} onClick={() => handleStatClick('mine')}>
+             <h3 style={styles.statNumber}>{stats.myPetitions}</h3>
+             <span style={styles.statLabel}>My Petitions</span>
            </button>
-           <button style={styles.statCard}>
-             <h3>Successful Petitions</h3>
+           
+           <button style={styles.statCard} onClick={() => handleStatClick('successful')}>
+             <h3 style={styles.statNumber}>{stats.successfulPetitions}</h3>
+             <span style={styles.statLabel}>Successful (Closed)</span>
            </button>
+           
            <button style={styles.statCard}>
-             <h3>Polls created</h3>
+             <h3 style={styles.statNumber}>{stats.pollsCreated}</h3>
+             <span style={styles.statLabel}>Polls Created</span>
            </button>
         </div>
 
-        {/* CLICKABLE CATEGORY BUTTONS */}
+        {/* DYNAMIC CATEGORY BUTTONS */}
+        <h3 style={{color: '#333', marginBottom: '10px'}}>Browse by Category</h3>
         <div style={styles.categoryGrid}>
            {categories.map((cat, index) => (
-             <button key={index} style={styles.oval}>
+             <button 
+                key={index} 
+                style={styles.oval}
+                onClick={() => handleCategoryClick(cat)}
+             >
                {cat}
              </button>
            ))}
@@ -99,16 +163,16 @@ const styles = {
   main: { flex: 1, display: "flex", flexDirection: "column", gap: "30px", paddingTop: "20px" },
   banner: { backgroundColor: "#bfdbfe", padding: "30px", borderRadius: "5px", fontWeight: "bold", textAlign: "left" },
   
-  // Added Dropdown Style
-  dropdown: { padding: "8px", borderRadius: "5px", border: "1px solid #3b82f6", backgroundColor: "white", cursor: "pointer", fontWeight: "bold" },
+  dropdown: { padding: "8px", borderRadius: "5px", color: "#000000", border: "1px solid #3b82f6", backgroundColor: "white", cursor: "pointer", fontWeight: "bold" },
 
   statsGrid: { display: "flex", gap: "20px" },
   
-  // Updated StatCard to be button-like
-  statCard: { flex: 1, height: "150px", backgroundColor: "#bfdbfe", borderRadius: "10px", display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "20px", fontWeight: "bold", fontSize: "1.1rem", border: "none", cursor: "pointer", transition: "0.2s" },
+  // Updated Stat Card for Numbers
+  statCard: { flex: 1, height: "150px", backgroundColor: "#bfdbfe", borderRadius: "10px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "20px", border: "none", cursor: "pointer", transition: "0.2s" },
+  statNumber: { fontSize: "2.5rem", margin: 0, color: "#1e3a8a" },
+  statLabel: { fontSize: "1.1rem", fontWeight: "bold", color: "#1e3a8a" },
 
   categoryGrid: { display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "20px", marginTop: "10px" },
   
-  // Updated Oval to be button-like
-  oval: { backgroundColor: "#bfdbfe", borderRadius: "50px", padding: "15px", textAlign: "center", fontWeight: "bold", fontStyle: "italic", cursor: "pointer", border: "none", fontSize: "1rem", transition: "0.2s" }
+  oval: { backgroundColor: "#bfdbfe", borderRadius: "50px", padding: "15px", textAlign: "center", fontWeight: "bold", fontStyle: "italic", cursor: "pointer", border: "none", fontSize: "1rem", transition: "0.2s", color: "#1e3a8a" }
 };
