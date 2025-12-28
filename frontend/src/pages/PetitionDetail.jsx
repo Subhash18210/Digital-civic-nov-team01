@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import axios from "axios";
+import API from "../api"; // <--- FIXED: Use our API helper
 import AuthContext from "../context/AuthContext";
 
 export default function PetitionDetail() {
@@ -16,7 +16,8 @@ export default function PetitionDetail() {
   useEffect(() => {
     const fetchPetition = async () => {
       try {
-        const { data } = await axios.get(`http://localhost:5000/api/petitions/${id}`);
+        // <--- FIXED: Use API.get (Handles Base URL)
+        const { data } = await API.get(`/petitions/${id}`);
         setPetition(data);
         setLoading(false);
       } catch (err) {
@@ -30,15 +31,12 @@ export default function PetitionDetail() {
   // Handle Sign Petition
   const handleSign = async () => {
     try {
-      const token = localStorage.getItem("token");
-      await axios.post(`http://localhost:5000/api/petitions/${id}/sign`, {}, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      // <--- FIXED: API.post automatically attaches the Token from localStorage
+      await API.post(`/petitions/${id}/sign`);
+      
       alert("Successfully signed!");
-      // Refresh data to show new count
       window.location.reload(); 
     } catch (err) {
-      // Backend returns 400 if already signed (duplicate index)
       alert(err.response?.data?.message || "Error signing petition");
     }
   };
@@ -65,13 +63,15 @@ export default function PetitionDetail() {
       </div>
 
       <div style={styles.actionBox}>
-        <h3>{petition.signatures} Supporters</h3>
+        {/* <--- FIXED: Used 'signatureCount' to match Backend */}
+        <h3>{petition.signatureCount || 0} Supporters</h3>
+        
         <div style={styles.barContainer}>
             {/* Simple visual progress bar (Goal: 100 for now) */}
-            <div style={{...styles.progressBar, width: `${Math.min(petition.signatures, 100)}%`}}></div>
+            <div style={{...styles.progressBar, width: `${Math.min(petition.signatureCount || 0, 100)}%`}}></div>
         </div>
         
-        {/* CHECKLIST 5 & 6: Role Based Signing */}
+        {/* CHECKLIST: Role Based Signing */}
         {user?.role === "citizen" && petition.status === "active" ? (
           <button onClick={handleSign} style={styles.signBtn}>
             ✍️ Sign this Petition
