@@ -20,6 +20,13 @@ import PetitionDetail from "./pages/PetitionDetail";
 import PollList from "./pages/PollList";
 import CreatePoll from "./pages/CreatePoll";
 
+
+// Poll Details
+import PollDetail from "./pages/PollDetail";
+import ProtectedRoute from "./routes/ProtectedRoute";
+
+
+
 // Report Pages
 import Reports from "./pages/Reports";
 
@@ -46,26 +53,32 @@ const Layout = () => {
       {showNavbar && <Navbar />}
 
       <Routes>
-        {/* --- Public Routes (No Navbar) --- */}
-        <Route path="/" element={<Home />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
+  {/* ---------- Public Routes ---------- */}
+  <Route path="/" element={<Home />} />
+  <Route path="/login" element={<Login />} />
+  <Route path="/register" element={<Register />} />
 
-        {/* --- Protected Routes (With Navbar) --- */}
-        <Route path="/dashboard" element={<Dashboard />} />
-        
-        <Route path="/petitions" element={<PetitionList />} />
-        <Route path="/create-petition" element={<CreatePetition />} />
-        <Route path="/petitions/:id" element={<PetitionDetail />} />
+  {/* ---------- Protected Routes ---------- */}
+  <Route element={<ProtectedRoute />}>
+    <Route path="/dashboard" element={<Dashboard />} />
 
-        <Route path="/polls" element={<PollList />} />
-        <Route path="/create-poll" element={<CreatePoll />} />
+    <Route path="/petitions" element={<PetitionList />} />
+    <Route path="/create-petition" element={<CreatePetition />} />
+    <Route path="/petitions/:id" element={<PetitionDetail />} />
 
-        <Route path="/reports" element={<Reports />} />
+    <Route path="/polls" element={<PollList />} />
+    <Route path="/polls/:pollId" element={<PollDetail />} />
+    <Route path="/create-poll" element={<CreatePoll />} />
 
-        {/* Fallback */}
-        <Route path="*" element={<Navigate to="/" />} />
-      </Routes>
+    <Route path="/reports" element={<Reports />} />
+  </Route>
+
+  {/* ---------- Fallback ---------- */}
+  <Route path="*" element={<Navigate to="/" replace />} />
+  <Route path="/polls/:pollId/results" element={<PollResults />} />
+
+</Routes>
+
     </div>
   );
 };
