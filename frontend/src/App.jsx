@@ -72,11 +72,6 @@ const Layout = () => {
 
     <Route path="/reports" element={<Reports />} />
   </Route>
-
-  {/* ---------- Fallback ---------- */}
-  <Route path="*" element={<Navigate to="/" replace />} />
-  <Route path="/polls/:pollId/results" element={<PollResults />} />
-
 </Routes>
 
     </div>
