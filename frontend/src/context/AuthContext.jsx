@@ -1,8 +1,11 @@
-import React, { createContext, useState, useEffect } from "react";
+import React, { createContext, useState, useEffect, useContext } from "react";
 import { useNavigate } from "react-router-dom";
-import API from "../api";
+import API from "../api"; // Keeps your central API config
 
 const AuthContext = createContext();
+
+// Useful shortcut from Anuj's branch
+export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -15,24 +18,26 @@ export const AuthProvider = ({ children }) => {
       const token = localStorage.getItem("token");
       const storedUser = localStorage.getItem("user");
 
-      // ✅ Restore user immediately (prevents redirect)
+      // 1. Restore user immediately for speed
       if (storedUser) {
         setUser(JSON.parse(storedUser));
       }
 
-      // ✅ Validate token with backend (optional but good)
+      // 2. Validate token with backend
       if (token) {
         try {
           const { data } = await API.get("/auth/me");
           setUser(data);
+          // Update local storage with fresh data
           localStorage.setItem("user", JSON.stringify(data));
         } catch (err) {
+          // If token is invalid/expired, clear everything
+          console.error("Session expired:", err);
           localStorage.removeItem("token");
           localStorage.removeItem("user");
           setUser(null);
         }
       }
-
       setLoading(false);
     };
 
@@ -41,24 +46,32 @@ export const AuthProvider = ({ children }) => {
 
   /* ---------------- REGISTER ---------------- */
   const register = async (userData) => {
-    const { data } = await API.post("/auth/register", userData);
-
-    localStorage.setItem("token", data.token);
-    localStorage.setItem("user", JSON.stringify(data.user || data));
-
-    setUser(data.user || data);
-    navigate("/dashboard");
+    try {
+      const { data } = await API.post("/auth/register", userData);
+      
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data.user || data));
+      
+      setUser(data.user || data);
+      navigate("/dashboard");
+    } catch (error) {
+      throw error; // Throw error so the UI can show an alert
+    }
   };
 
   /* ---------------- LOGIN ---------------- */
   const login = async (credentials) => {
-    const { data } = await API.post("/auth/login", credentials);
-
-    localStorage.setItem("token", data.token);
-    localStorage.setItem("user", JSON.stringify(data.user || data));
-
-    setUser(data.user || data);
-    navigate("/dashboard");
+    try {
+      const { data } = await API.post("/auth/login", credentials);
+      
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data.user || data));
+      
+      setUser(data.user || data);
+      navigate("/dashboard");
+    } catch (error) {
+      throw error;
+    }
   };
 
   /* ---------------- LOGOUT ---------------- */
@@ -71,7 +84,7 @@ export const AuthProvider = ({ children }) => {
 
   return (
     <AuthContext.Provider value={{ user, register, login, logout, loading }}>
-      {children}
+      {!loading && children}
     </AuthContext.Provider>
   );
 };
