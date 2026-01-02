@@ -3,26 +3,31 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const dotenv = require('dotenv');
 
-// 1. Load environment variables
+// 1. Load Config
 dotenv.config();
 
-// 2. CREATE THE APP (This was missing or in the wrong spot)
+// 2. Create App
 const app = express();
 
-// 3. Middleware (Must come AFTER creating app)
+// 3. Middleware
 app.use(cors());
 app.use(express.json());
 
-// 4. Routes
-const authRoutes = require('./routes/auth');
+// 4. Import Routes
+// Note: We use './' here, not '../' because routes are in the same folder as index.js
+const authRoutes = require('./routes/userRoutes'); 
+const petitionRoutes = require('./routes/petitionRoutes'); 
+
+// 5. Use Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/petitions', petitionRoutes);
 
-// 5. Database Connection
+// 6. Connect to DB
 mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log('MongoDB Connected'))
-  .catch((err) => console.log('DB Connection Error:', err));
+  .then(() => console.log(' MongoDB Connected'))
+  .catch((err) => console.log(' DB Connection Error:', err));
 
-// 6. Start Server
+// 7. Start Server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

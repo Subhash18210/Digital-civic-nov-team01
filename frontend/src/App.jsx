@@ -1,59 +1,81 @@
-// src/App.jsx
-import React, { useState, useEffect } from 'react';
-import { AuthProvider, useAuth } from './context/AuthContext.jsx';
-import LoginPage from './pages/Login.jsx';
-import RegisterPage from './pages/Register.jsx';
-import Dashboard from './pages/Dashboard.jsx';
-import './App.css'; 
+import React from "react";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom"; // Removed 'BrowserRouter'
+import { AuthProvider } from "./context/AuthContext";
 
-// Component that handles the actual view switching
-const AppRouter = () => {
-    const { isAuthenticated, login, user } = useAuth();
-    const [currentView, setCurrentView] = useState('login'); // 'login', 'register', 'dashboard'
+// Components
+import Navbar from "./components/Navbar";
 
-    // If authenticated, always show dashboard, otherwise respect current view state
-    useEffect(() => {
-        if (isAuthenticated) {
-            setCurrentView('dashboard');
-        } else if (currentView === 'dashboard') {
-            setCurrentView('login');
-        }
-    }, [isAuthenticated]);
+// Pages
+import Home from "./pages/Home";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import Dashboard from "./pages/Dashboard";
 
-    // Handlers to pass to Login/Register pages
-    const handleLoginSuccess = (userData) => {
-        login(userData);
-        setCurrentView('dashboard');
-    };
+// Petition Pages
+import PetitionList from "./pages/PetitionList";
+import CreatePetition from "./pages/CreatePetition";
+import PetitionDetail from "./pages/PetitionDetail";
 
-    const handleRegisterSuccess = () => {
-        setCurrentView('login');
-    };
+// Poll Pages
+import PollList from "./pages/PollList";
+import CreatePoll from "./pages/CreatePoll";
 
-    if (isAuthenticated) {
-        return <Dashboard user={user} />;
-    }
 
-    switch (currentView) {
-        case 'register':
-            return <RegisterPage 
-                        onNavigateToLogin={() => setCurrentView('login')} 
-                        onRegisterSuccess={handleRegisterSuccess}
-                    />;
-        case 'login':
-        default:
-            return <LoginPage 
-                        onNavigateToRegister={() => setCurrentView('register')} 
-                        onLoginSuccess={handleLoginSuccess}
-                    />;
-    }
-};
+// Poll Details
+import PollDetail from "./pages/PollDetail";
+import ProtectedRoute from "./routes/ProtectedRoute";
 
-// Main App component wrapped in the AuthProvider
-const App = () => (
+
+
+// Report Pages
+import Reports from "./pages/Reports";
+
+function App() {
+  return (
+    // <--- REMOVED <Router> TAGS HERE. 'main.jsx' is likely handling it.
     <AuthProvider>
-        <AppRouter />
+      <Layout />
     </AuthProvider>
-);
+  );
+}
+
+// Layout component to handle conditional Navbar
+const Layout = () => {
+  const location = useLocation();
+
+  // Define paths where Navbar should be HIDDEN
+  const hideNavbarPaths = ["/", "/login", "/register"];
+  const showNavbar = !hideNavbarPaths.includes(location.pathname);
+
+  return (
+    <div className="app-container">
+      {/* Show Navbar only on inner pages */}
+      {showNavbar && <Navbar />}
+
+      <Routes>
+  {/* ---------- Public Routes ---------- */}
+  <Route path="/" element={<Home />} />
+  <Route path="/login" element={<Login />} />
+  <Route path="/register" element={<Register />} />
+
+  {/* ---------- Protected Routes ---------- */}
+  <Route element={<ProtectedRoute />}>
+    <Route path="/dashboard" element={<Dashboard />} />
+
+    <Route path="/petitions" element={<PetitionList />} />
+    <Route path="/create-petition" element={<CreatePetition />} />
+    <Route path="/petitions/:id" element={<PetitionDetail />} />
+
+    <Route path="/polls" element={<PollList />} />
+    <Route path="/polls/:pollId" element={<PollDetail />} />
+    <Route path="/create-poll" element={<CreatePoll />} />
+
+    <Route path="/reports" element={<Reports />} />
+  </Route>
+</Routes>
+
+    </div>
+  );
+};
 
 export default App;

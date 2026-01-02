@@ -1,76 +1,102 @@
-# Civix: Digital Civic Engagement & Petition Platform
+# 🏛️ Digital Civic Engagement Platform
 
-[cite_start]**Civix** enables citizens to engage in local governance through petitions, voting, and tracking officials' responses[cite: 3]. [cite_start]It fosters community-driven advocacy by allowing geo-targeted issues and public sentiment polling[cite: 4].
+##  Introduction
 
-[cite_start]The platform bridges the gap between residents and local officials, ensuring transparency and accountability in civic matters[cite: 9].
+The **Digital Civic Engagement Platform** is a MERN Stack web application designed to bridge the gap between citizens and government officials. It empowers users to voice their concerns through digital petitions, participate in polls, and track the status of community issues in real-time.
 
-## 🌟 Key Features
-
-* [cite_start]**Petition Management:** Users can create, edit, sign, and geo-tag petitions to gather community support[cite: 6, 7, 23].
-* [cite_start]**Public Polling:** Issue-specific polls allow users to vote and view live sentiment graphs on local topics[cite: 8, 29, 31].
-* [cite_start]**Governance Dashboard:** Officials can track public interest, respond to petitions, and view engagement reports[cite: 9, 36, 37].
-* [cite_start]**Role-Based Access:** Secure authentication for two distinct user roles: **Citizens** and **Public Officials**[cite: 11, 46].
+This project aims to promote transparency and active citizenship by providing a secure, role-based environment where:
+* **Citizens** can create petitions, sign existing ones, and view community reports.
+* **Officials** can view issues specific to their jurisdiction (upcoming feature) and analyze community feedback.
 
 ---
 
-## 🛠 Tech Stack
-
-* **Frontend:** React.js + Vite
-* **Backend:** Node.js + Express.js
-* **Database:** MongoDB (Mongoose)
-* **Authentication:** JWT (JSON Web Tokens)
+##  Features
+* **User Authentication:** Secure Login and Registration using JWT (JSON Web Tokens).
+* **Role-Based Access:** Distinct features for Citizens and Officials.
+* **Petition Management:** Create, Read, and Sign petitions.
+* **Smart Filtering:** Filter petitions by Category (Health, Infrastructure, etc.), Status, or Location.
+* **Dashboard:** A personalized dashboard showing user stats and activity.
+* **Duplicate Prevention:** Ensures a user cannot sign the same petition twice.
+* **Responsive UI:** Built with React and Lucide Icons for a clean interface.
 
 ---
 
-## ⚙️ Local Installation Guide
+##  Tech Stack
+* **Frontend:** React.js, React Router, Axios, Tailwind CSS (optional/if used).
+* **Backend:** Node.js, Express.js.
+* **Database:** MongoDB Atlas (Cloud Database).
+* **Visualization & Maps:** Recharts (for Polls/Stats), Leaflet (for Location Maps).
+* **Authentication:** BCrypt (Password Hashing), JWT.
+
+---
+
+##  Local Setup Guide
 
 Follow these steps to set up the project locally on your machine.
 
-### Prerequisites
-Make sure you have the following installed:
-* [Node.js](https://nodejs.org/)
-* [Git](https://git-scm.com/)
-* MongoDB (Locally installed or a MongoDB Atlas connection string)
+### 1. Prerequisites
+* **Node.js** (v14 or higher) installed.
+* **MongoDB Atlas** account (or a local MongoDB instance).
+* **Git** installed.
 
-### 1. Clone the Repository
+### 2. Clone the Repository
+
 Open your terminal and run:
 ```bash
-git clone https://github.com/springboardmentor9515a-collab/Digital-civic-nov-team01.git
+
+git clone <YOUR_GITHUB_REPO_LINK_HERE>
+
 cd Digital-civic-nov-team01
-2. Backend Setup (Server)
-Navigate to the server folder and install dependencies:
 
-Bash
 
-cd server
+3. Backend Setup (Server)Navigate to the backend folder and install dependencies:Bashcd backend
+
 npm install
-Configuration: Create a .env file inside the server folder and add your specific variables (ask the Team Lead for credentials):
 
-Code snippet
+Configure Environment Variables:Create a file named .env inside the backend folder and add the following:Code snippetPORT=5000
 
-PORT=5000
-MONGO_URI=your_mongodb_connection_string
-JWT_SECRET=your_secret_key
-Start the Server:
+MONGO_URI=your_mongodb_connection_string_here
 
-Bash
+JWT_SECRET=your_super_secret_key_here
 
-npm start
-# The server should run on http://localhost:5000
-3. Frontend Setup (Client)
-Open a new terminal window (keep the server running in the first one) and navigate to the client folder:
+(Note: Replace your_mongodb_connection_string_here with your actual Atlas connection link).Start the Server:Bashnpm start
+You should see: Server running on port 5000 and MongoDB Connected.4. Frontend Setup (Client)Open a new terminal window (leave the backend running) and navigate to the frontend folder:Bashcd frontend
 
-Bash
+Install Core Dependencies: npm install
 
-cd client
-npm install
-Start the Frontend:
+Install Visualization & Map Libraries:(As per project requirements for Graphs and Maps)Bashnpm install recharts leaflet react-leaflet axios lucide-react react-router-dom
 
-Bash
+Start the React App:npm start
 
-npm run dev
-# The app should run on http://localhost:5173 (or similar)
-4. Verify Connection
-Open your browser and go to the frontend URL (e.g., http://localhost:5173). If the page loads and you can see the login screen, the setup is complete!
+The app should now open in your browser at http://localhost:3000.
+
+Project StructureBashDigital-civic-nov-team01/
+
+├── backend/                # Server-side logic
+│   ├── config/             # DB connection
+│   ├── controllers/        # Logic for Petitions/Users
+│   ├── models/             # Mongoose Schemas (User, Petition)
+│   ├── routes/             # API Routes
+│   ├── middleware/         # Auth Middleware
+│   └── index.js            # Entry point
+│
+└── frontend/               # Client-side logic
+    ├── src/
+    │   ├── components/     # Reusable UI components
+    │   ├── context/        # Auth Context (Login state)
+    │   ├── pages/          # Dashboard, Login, Petition Lists
+    │   └── api.js          # Axios configuration
+    └── package.json
+
+    
+🔗 API EndpointsMethodEndpointDescription
+
+POST/api/auth/registerRegister      a new user
+POST/api/auth/loginLogin            user & get Token
+GET/api/petitionsGet                all petitions (with filters)
+POST/api/petitionsCreate            a new petition (Auth required)
+POST/api/petitions/:id/sign         Sign a petition (Auth required)
 
 
+🤝 ContributingFork the repository.
+Create a new branch (git checkout -b feature-name).Commit your changes (git commit -m 'Added new feature').Push to the branch (git push origin feature-name).Open a Pull Request.

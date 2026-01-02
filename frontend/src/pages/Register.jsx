@@ -1,82 +1,205 @@
-import React, { useState } from 'react';
-import { useAuth } from '../context/AuthContext';
-import '../App.css';
+import { useState, useContext } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import AuthContext from "../context/AuthContext";
+import { User, Mail, Lock, MapPin, Briefcase } from "lucide-react";
 
-const RegisterPage = ({ onNavigateToLogin }) => {
-  const { register } = useAuth();
-  const [formData, setFormData] = useState({ name: '', email: '', password: '', location: '', role: 'citizen' });
+// --- MAP IMPORTS ---
+import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
+import "leaflet/dist/leaflet.css";
+import L from "leaflet";
+
+// Fix for default Leaflet marker icon missing in React
+import icon from "leaflet/dist/images/marker-icon.png";
+import iconShadow from "leaflet/dist/images/marker-shadow.png";
+
+let DefaultIcon = L.icon({
+  iconUrl: icon,
+  shadowUrl: iconShadow,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+});
+L.Marker.prototype.options.icon = DefaultIcon;
+
+const Register = () => {
+  const navigate = useNavigate();
+  const { register } = useContext(AuthContext);
+
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    password: "",
+    role: "citizen",
+    location: ""
+  });
+
+  // Map State (Default: Hyderabad)
+  const [mapCoords, setMapCoords] = useState([17.3850, 78.4867]); 
+  const [error, setError] = useState("");
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  // --- MAP COMPONENT TO HANDLE CLICKS ---
+  function LocationMarker() {
+    useMapEvents({
+      click: async (e) => {
+        const { lat, lng } = e.latlng;
+        setMapCoords([lat, lng]); // Move marker visual
+        
+        // Reverse Geocoding (Get City Name)
+        try {
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
+          );
+          const data = await response.json();
+          const city = data.address.city || data.address.town || data.address.village || data.address.county || "Selected Location";
+          
+          // Auto-fill the existing location input
+          setFormData((prev) => ({ ...prev, location: city }));
+        } catch (error) {
+          // Fallback if API fails
+          setFormData((prev) => ({ ...prev, location: `${lat.toFixed(4)}, ${lng.toFixed(4)}` }));
+        }
+      },
+    });
+
+    return mapCoords === null ? null : (
+      <Marker position={mapCoords}></Marker>
+    );
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
     try {
       await register(formData);
-      onNavigateToLogin();
+      navigate("/dashboard");
     } catch (err) {
-      alert(err.message);
+      setError(err.response?.data?.message || "Registration Failed");
     }
   };
 
   return (
-    <div className="auth-page-wrapper">
-      {/* Left Panel remains identical for branding consistency */}
-      <div className="info-sidebar">
-        <div className="brand-section">
-          <h1>🏛️ Civix</h1>
-          <h2>Digital Civic Engagement Platform</h2>
-          <p className="brand-description">Civix enables citizens to engage in local governance through petitions, voting, and tracking officials' responses.</p>
-          <div className="feature-list">
-             {/* Feature items same as Login for UI consistency */}
-          </div>
-        </div>
-      </div>
+    <div style={styles.container}>
+      <div style={styles.card}>
+        <h2 style={styles.title}>Create Account</h2>
+        <p style={styles.subtitle}>Join your community today</p>
 
-      <div className="form-section">
-        <div className="auth-card" style={{padding: '35px'}}>
-          <h2 style={{textAlign: 'center', marginBottom: '10px'}}>Welcome to Civix</h2>
-          <p style={{textAlign: 'center', color: '#666', fontSize: '14px', marginBottom: '25px'}}>Join our platform to make your voice heard.</p>
+        {error && <div style={styles.errorBox}>{error}</div>}
+
+        <form onSubmit={handleSubmit} style={styles.form}>
           
-          <div className="auth-tabs" style={{display: 'flex', borderBottom: '1px solid #ddd', marginBottom: '20px'}}>
-            <button className="auth-tab" onClick={onNavigateToLogin} style={{flex: 1, padding: '12px', border: 'none', background: 'none', cursor: 'pointer', color: '#666'}}>Login</button>
-            <button className="auth-tab active" style={{flex: 1, padding: '12px', border: 'none', background: 'none', borderBottom: '2px solid var(--primary-color)', fontWeight: 'bold', color: 'var(--primary-color)'}}>Register</button>
+          <div style={styles.inputGroup}>
+            <User size={18} style={styles.icon} />
+            <input type="text" name="name" placeholder="Full Name" value={formData.name} onChange={handleChange} required style={styles.input} />
           </div>
 
-          <form onSubmit={handleSubmit}>
-            <div className="form-group" style={{marginBottom: '15px'}}>
-              <label style={{display: 'block', marginBottom: '5px', fontWeight: '600', fontSize: '14px'}}>Full Name</label>
-              <input type="text" placeholder="Jane Doe" onChange={(e) => setFormData({...formData, name: e.target.value})} required style={{width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ddd'}} />
-            </div>
-            <div className="form-group" style={{marginBottom: '15px'}}>
-              <label style={{display: 'block', marginBottom: '5px', fontWeight: '600', fontSize: '14px'}}>Email</label>
-              <input type="email" placeholder="your@email.com" onChange={(e) => setFormData({...formData, email: e.target.value})} required style={{width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ddd'}} />
-            </div>
-            <div className="form-group" style={{marginBottom: '15px'}}>
-              <label style={{display: 'block', marginBottom: '5px', fontWeight: '600', fontSize: '14px'}}>Password</label>
-              <input type="password" placeholder="••••••••" onChange={(e) => setFormData({...formData, password: e.target.value})} required style={{width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ddd'}} />
-            </div>
-            <div className="form-group" style={{marginBottom: '15px'}}>
-              <label style={{display: 'block', marginBottom: '5px', fontWeight: '600', fontSize: '14px'}}>Location</label>
-              <input type="text" placeholder="Portland, OR" onChange={(e) => setFormData({...formData, location: e.target.value})} required style={{width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ddd'}} />
-            </div>
-            <div className="form-group" style={{marginBottom: '20px'}}>
-              <label style={{display: 'block', marginBottom: '10px', fontWeight: '600', fontSize: '14px'}}>I am registering as:</label>
-              <div style={{display: 'flex', gap: '20px', fontSize: '14px'}}>
-                <label style={{display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer'}}>
-                  <input type="radio" name="role" value="citizen" checked={formData.role === 'citizen'} onChange={() => setFormData({...formData, role: 'citizen'})} /> Citizen
-                </label>
-                <label style={{display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer'}}>
-                  <input type="radio" name="role" value="official" checked={formData.role === 'official'} onChange={() => setFormData({...formData, role: 'official'})} /> Public Official
-                </label>
-              </div>
-            </div>
-            <button type="submit" className="primary-button" style={{width: '100%', padding: '14px', background: 'var(--primary-color)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer'}}>Create Account</button>
-          </form>
-          <p style={{textAlign: 'center', marginTop: '15px', fontSize: '13px'}}>
-            Already have an account? <span onClick={onNavigateToLogin} style={{color: 'var(--primary-color)', fontWeight: 'bold', cursor: 'pointer'}}>Sign in</span>
-          </p>
-        </div>
+          <div style={styles.inputGroup}>
+            <Mail size={18} style={styles.icon} />
+            <input type="email" name="email" placeholder="Email Address" value={formData.email} onChange={handleChange} required style={styles.input} />
+          </div>
+
+          <div style={styles.inputGroup}>
+            <Lock size={18} style={styles.icon} />
+            <input type="password" name="password" placeholder="Password" value={formData.password} onChange={handleChange} required style={styles.input} />
+          </div>
+
+          <div style={styles.inputGroup}>
+            <Briefcase size={18} style={styles.icon} />
+            <select name="role" value={formData.role} onChange={handleChange} style={styles.select}>
+              <option value="citizen">Citizen</option>
+              <option value="official">Public Official</option>
+            </select>
+          </div>
+
+          <div style={styles.inputGroup}>
+            <MapPin size={18} style={styles.icon} />
+            <input type="text" name="location" placeholder="City, State (e.g. Hyderabad)" value={formData.location} onChange={handleChange} required style={styles.input} />
+          </div>
+
+          {/* --- NEW MAP SECTION --- */}
+          <div style={styles.mapWrapper}>
+            <MapContainer 
+                center={[17.3850, 78.4867]} 
+                zoom={11} 
+                style={{ height: "100%", width: "100%" }}
+            >
+                <TileLayer
+                  attribution='&copy; OpenStreetMap'
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
+                <LocationMarker />
+            </MapContainer>
+            <p style={styles.mapHint}>Click map to auto-fill location</p>
+          </div>
+          {/* ----------------------- */}
+
+          <button type="submit" style={styles.button}>Register</button>
+        </form>
+
+        <p style={styles.footerText}>
+          Already have an account? <Link to="/login" style={styles.link}>Login here</Link>
+        </p>
       </div>
     </div>
   );
 };
 
-export default RegisterPage;
+// Light Blue Theme Styles (Unchanged + Map styles)
+const styles = {
+  container: {
+    display: "flex", justifyContent: "center", alignItems: "center", minHeight: "100vh", // Changed height to minHeight for scrolling
+    backgroundColor: "#e0f2fe",
+    fontFamily: "sans-serif",
+    padding: "20px" // Added padding for small screens
+  },
+  card: {
+    backgroundColor: "white", padding: "40px", borderRadius: "15px",
+    boxShadow: "0 4px 20px rgba(0, 0, 0, 0.1)", width: "100%", maxWidth: "400px", textAlign: "center"
+  },
+  title: { fontSize: "2rem", marginBottom: "5px", fontWeight: "bold", color: "#1e3a8a" },
+  subtitle: { color: "#64748b", marginBottom: "20px", fontSize: "0.9rem" },
+  errorBox: { backgroundColor: "#fee2e2", border: "1px solid #ef4444", color: "#b91c1c", padding: "10px", borderRadius: "5px", marginBottom: "15px", fontSize: "0.9rem" },
+  form: { display: "flex", flexDirection: "column", gap: "15px" },
+  inputGroup: { position: "relative", display: "flex", alignItems: "center" },
+  icon: { position: "absolute", left: "12px", color: "#3b82f6" },
+  input: {
+    width: "100%", padding: "12px 12px 12px 40px", borderRadius: "8px",
+    border: "1px solid #cbd5e1", backgroundColor: "#f8fafc", color: "#334155", fontSize: "1rem", outline: "none"
+  },
+  select: {
+    width: "100%", padding: "12px 12px 12px 40px", borderRadius: "8px",
+    border: "1px solid #cbd5e1", backgroundColor: "#f8fafc", color: "#334155", fontSize: "1rem", outline: "none", appearance: "none"
+  },
+  button: {
+    padding: "12px", borderRadius: "8px", border: "none", backgroundColor: "#2563eb",
+    color: "white", fontSize: "1rem", fontWeight: "bold", cursor: "pointer", marginTop: "10px", transition: "background 0.3s"
+  },
+  footerText: { marginTop: "20px", color: "#64748b", fontSize: "0.9rem" },
+  link: { color: "#2563eb", textDecoration: "none", fontWeight: "bold" },
+  
+  // --- NEW STYLES FOR MAP ---
+  mapWrapper: {
+    height: "180px", 
+    width: "100%", 
+    borderRadius: "8px", 
+    overflow: "hidden", 
+    border: "1px solid #cbd5e1",
+    position: "relative"
+  },
+  mapHint: {
+    position: "absolute",
+    bottom: "0",
+    left: "0",
+    right: "0",
+    backgroundColor: "rgba(255, 255, 255, 0.8)",
+    fontSize: "0.75rem",
+    padding: "4px",
+    margin: "0",
+    color: "#64748b",
+    zIndex: 1000 // Ensure it sits on top of map
+  }
+};
+
+export default Register;

@@ -1,89 +1,113 @@
-import React, { useState } from 'react';
-import { useAuth } from '../context/AuthContext';
-import '../App.css';
+import { useState, useContext } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import AuthContext from "../context/AuthContext";
+import { Mail, Lock, LogIn } from "lucide-react";
 
-const LoginPage = ({ onNavigateToRegister }) => {
-  const { login } = useAuth();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+// --- THE FIX IS IN THIS LINE BELOW ---
+export default function Login() {
+  const navigate = useNavigate();
+  const { login } = useContext(AuthContext);
 
-  const handleLogin = async (e) => {
+  const [formData, setFormData] = useState({ email: "", password: "" });
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
+    setLoading(true);
     try {
-      await login({ email, password });
+      await login(formData);
+      navigate("/dashboard");
     } catch (err) {
-      alert(err.message);
+      setError(err.response?.data?.message || "Login failed. Check your details.");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="auth-page-wrapper">
-      <div className="info-sidebar">
-        <div className="brand-section">
-          <h1>🏛️ Civix</h1>
-          <h2>Digital Civic Engagement Platform</h2>
-          <p className="brand-description">
-            Civix enables citizens to engage in local governance through petitions, 
-            voting, and tracking officials' responses. Join our platform to make your 
-            voice heard and drive positive change in your community. 
-          </p>
+    <div style={styles.container}>
+      <div style={styles.card}>
+        <h2 style={styles.title}>Welcome Back</h2>
+        <p style={styles.subtitle}>Login to continue to Civix</p>
 
-          <div className="feature-list">
-            <div className="feature-item">
-              <div className="feature-icon-box">📝</div>
-              <div>
-                <h4>Create and Sign Petitions</h4>
-                <p>Easily create petitions for issues you care about and gather support from your community.</p>
-              </div>
-            </div>
-            <div className="feature-item">
-              <div className="feature-icon-box">🗳️</div>
-              <div>
-                <h4>Participate in Public Polls</h4>
-                <p>Vote on local issues and see real-time results of community sentiment.</p>
-              </div>
-            </div>
-            <div className="feature-item">
-              <div className="feature-icon-box">📈</div>
-              <div>
-                <h4>Track Official Responses</h4>
-                <p>See how local officials respond to community concerns and track progress.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+        {error && <div style={styles.errorBox}>{error}</div>}
 
-      <div className="form-section">
-        <div className="auth-card">
-          <h2 style={{textAlign: 'center', marginBottom: '10px'}}>Welcome to Civix</h2>
-          <p style={{textAlign: 'center', color: '#666', fontSize: '14px', marginBottom: '30px'}}>
-            Join our platform to make your voice heard in local governance.
-          </p>
-          
-          <div className="auth-tabs" style={{display: 'flex', borderBottom: '1px solid #ddd', marginBottom: '25px'}}>
-            <button className="auth-tab active" style={{flex: 1, padding: '12px', border: 'none', background: 'none', borderBottom: '2px solid var(--primary-color)', fontWeight: 'bold', color: 'var(--primary-color)'}}>Login</button>
-            <button className="auth-tab" onClick={onNavigateToRegister} style={{flex: 1, padding: '12px', border: 'none', background: 'none', cursor: 'pointer', color: '#666'}}>Register</button>
+        <form onSubmit={handleSubmit} style={styles.form}>
+          <div style={styles.inputGroup}>
+            <Mail size={18} style={styles.icon} />
+            <input 
+              type="email" 
+              name="email" 
+              placeholder="Email Address" 
+              value={formData.email} 
+              onChange={handleChange} 
+              required 
+              style={styles.input} 
+            />
           </div>
 
-          <form onSubmit={handleLogin}>
-            <div className="form-group" style={{marginBottom: '20px'}}>
-              <label style={{display: 'block', marginBottom: '8px', fontWeight: '600'}}>Email</label>
-              <input type="email" placeholder="your@email.com" value={email} onChange={(e) => setEmail(e.target.value)} required style={{width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #ddd'}} />
-            </div>
-            <div className="form-group" style={{marginBottom: '25px'}}>
-              <label style={{display: 'block', marginBottom: '8px', fontWeight: '600'}}>Password</label>
-              <input type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required style={{width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #ddd'}} />
-            </div>
-            <button type="submit" className="primary-button" style={{width: '100%', padding: '14px', background: 'var(--primary-color)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer'}}>Sign In</button>
-          </form>
-          <p style={{textAlign: 'center', marginTop: '20px', fontSize: '14px'}}>
-            Don't have an account? <span onClick={onNavigateToRegister} style={{color: 'var(--primary-color)', fontWeight: 'bold', cursor: 'pointer'}}>Register now</span>
-          </p>
-        </div>
+          <div style={styles.inputGroup}>
+            <Lock size={18} style={styles.icon} />
+            <input 
+              type="password" 
+              name="password" 
+              placeholder="Password" 
+              value={formData.password} 
+              onChange={handleChange} 
+              required 
+              style={styles.input} 
+            />
+          </div>
+
+          <button type="submit" disabled={loading} style={loading ? styles.disabledBtn : styles.button}>
+            {loading ? "Logging in..." : "Login"} <LogIn size={18} style={{ marginLeft: "8px" }}/>
+          </button>
+        </form>
+
+        <p style={styles.footerText}>
+          Don't have an account? <Link to="/register" style={styles.link}>Register here</Link>
+        </p>
       </div>
     </div>
   );
-};
+}
 
-export default LoginPage;
+// Styles
+const styles = {
+  container: {
+    display: "flex", justifyContent: "center", alignItems: "center", height: "100vh",
+    backgroundColor: "#e0f2fe", fontFamily: "sans-serif"
+  },
+  card: {
+    backgroundColor: "white", padding: "40px", borderRadius: "15px",
+    boxShadow: "0 4px 20px rgba(0, 0, 0, 0.1)", width: "100%", maxWidth: "400px", textAlign: "center"
+  },
+  title: { fontSize: "2rem", marginBottom: "5px", fontWeight: "bold", color: "#1e3a8a" },
+  subtitle: { color: "#64748b", marginBottom: "30px", fontSize: "0.9rem" },
+  errorBox: { backgroundColor: "#fee2e2", border: "1px solid #ef4444", color: "#b91c1c", padding: "10px", borderRadius: "5px", marginBottom: "20px", fontSize: "0.9rem" },
+  form: { display: "flex", flexDirection: "column", gap: "20px" },
+  inputGroup: { position: "relative", display: "flex", alignItems: "center" },
+  icon: { position: "absolute", left: "12px", color: "#3b82f6" },
+  input: {
+    width: "100%", padding: "12px 12px 12px 40px", borderRadius: "8px",
+    border: "1px solid #cbd5e1", backgroundColor: "#f8fafc", color: "#334155", fontSize: "1rem", outline: "none"
+  },
+  button: {
+    display: "flex", justifyContent: "center", alignItems: "center", padding: "12px", borderRadius: "8px",
+    border: "none", backgroundColor: "#2563eb", color: "white", fontSize: "1rem", fontWeight: "bold",
+    cursor: "pointer", marginTop: "10px", transition: "background 0.3s"
+  },
+  disabledBtn: {
+    display: "flex", justifyContent: "center", alignItems: "center", padding: "12px", borderRadius: "8px",
+    border: "none", backgroundColor: "#94a3b8", color: "white", fontSize: "1rem", fontWeight: "bold",
+    cursor: "not-allowed", marginTop: "10px",
+  },
+  footerText: { marginTop: "20px", color: "#64748b", fontSize: "0.9rem" },
+  link: { color: "#2563eb", textDecoration: "none", fontWeight: "bold" }
+};
