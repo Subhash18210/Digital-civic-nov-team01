@@ -66,6 +66,8 @@ export default function Dashboard() {
     }
   };
 
+  
+
   return (
     <div style={styles.container}>
       {/* --- SIDEBAR --- */}
@@ -80,14 +82,14 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
-        <div style={styles.menu}>
-          <NavItem icon={<LayoutDashboard size={18}/>} text="Dashboard" active />
+        <div className={"navbar-hover"} style={styles.menu}>
+          <NavItem icon={<LayoutDashboard size={18}/>} text="Dashboard" />
           <NavItem icon={<FileText size={18}/>} text="Petitions" to="/petitions" />
           <NavItem icon={<BarChart2 size={18}/>} text="Polls" to="/polls" />
           <NavItem icon={<Users size={18}/>} text="Officials" />
           <NavItem icon={<FileBarChart size={18}/>} text="Reports" to="/reports" />
           <NavItem icon={<Settings size={18}/>} text="Settings" />
-          <div style={{marginTop: "20px"}}>
+          <div className="navbar-hover" style={{marginTop: "20px"}}>
              <NavItem icon={<HelpCircle size={18}/>} text="Help & Support" />
           </div>
         </div>
@@ -152,27 +154,27 @@ const NavItem = ({ icon, text, active, to }) => (
 );
 
 const styles = {
-  container: { display: "flex", minHeight: "100vh", backgroundColor: "white", padding: "20px", gap: "30px", fontFamily: "sans-serif" },
+  container: { display: "flex", minHeight: "100vh", backgroundColor: "rgb(42, 10, 74)", padding: "20px", gap: "30px", fontFamily: "sans-serif" },
   sidebar: { width: "250px", display: "flex", flexDirection: "column", gap: "20px" },
-  profileCard: { backgroundColor: "#bfdbfe", border: "2px solid #3b82f6", borderRadius: "10px", padding: "15px" },
+  profileCard: { backgroundColor: "white", borderRadius: "10px", padding: "15px" ,color:'navy' },
   profileHeader: { display: "flex", alignItems: "center", gap: "15px" },
   bigAvatar: { width: "45px", height: "45px", borderRadius: "50%", backgroundColor: "#60a5fa", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "bold", fontSize: "1.2rem" },
   profileRow: { display: "flex", alignItems: "center", gap: "5px", fontSize: "0.85rem", marginTop: "3px", color: "#333" },
-  menu: { backgroundColor: "#bfdbfe", borderRadius: "10px", padding: "20px", flex: 1 },
+  menu: { backgroundColor: "#ffff", borderRadius: "10px", padding: "20px", flex: 1 },
   
   main: { flex: 1, display: "flex", flexDirection: "column", gap: "30px", paddingTop: "20px" },
-  banner: { backgroundColor: "#bfdbfe", padding: "30px", borderRadius: "5px", fontWeight: "bold", textAlign: "left" },
+  banner: { backgroundColor: "#ffff", padding: "30px", borderRadius: "5px", fontWeight: "bold", textAlign: "left",color:'navy' },
   
   dropdown: { padding: "8px", borderRadius: "5px", color: "#000000", border: "1px solid #3b82f6", backgroundColor: "white", cursor: "pointer", fontWeight: "bold" },
 
   statsGrid: { display: "flex", gap: "20px" },
   
   // Updated Stat Card for Numbers
-  statCard: { flex: 1, height: "150px", backgroundColor: "#bfdbfe", borderRadius: "10px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "20px", border: "none", cursor: "pointer", transition: "0.2s" },
+  statCard: { flex: 1, height: "150px", backgroundColor: "#ffff", borderRadius: "10px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "20px", border: "none", cursor: "pointer", transition: "0.2s" },
   statNumber: { fontSize: "2.5rem", margin: 0, color: "#1e3a8a" },
   statLabel: { fontSize: "1.1rem", fontWeight: "bold", color: "#1e3a8a" },
 
   categoryGrid: { display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "20px", marginTop: "10px" },
   
-  oval: { backgroundColor: "#bfdbfe", borderRadius: "50px", padding: "15px", textAlign: "center", fontWeight: "bold", fontStyle: "italic", cursor: "pointer", border: "none", fontSize: "1rem", transition: "0.2s", color: "#1e3a8a" }
+  oval: { backgroundColor: "#ffff", borderRadius: "50px", padding: "15px", textAlign: "center", fontWeight: "bold", fontStyle: "italic", cursor: "pointer", border: "none", fontSize: "1rem", transition: "0.2s", color: "#1e3a8a" }
 };
