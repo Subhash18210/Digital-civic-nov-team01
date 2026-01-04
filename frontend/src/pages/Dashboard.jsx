@@ -73,6 +73,8 @@ export default function Dashboard() {
     }
   };
 
+  
+
   return (
     <div style={styles.container}>
       {/* CSS Hack to force Options to be Black text if browser defaults to white bg */}
@@ -97,14 +99,14 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
-        <div style={styles.menu}>
-          <NavItem icon={<LayoutDashboard size={18}/>} text="Dashboard" active />
+        <div className={"navbar-hover"} style={styles.menu}>
+          <NavItem icon={<LayoutDashboard size={18}/>} text="Dashboard" />
           <NavItem icon={<FileText size={18}/>} text="Petitions" to="/petitions" />
           <NavItem icon={<BarChart2 size={18}/>} text="Polls" to="/polls" />
           <NavItem icon={<Users size={18}/>} text="Officials" />
           <NavItem icon={<FileBarChart size={18}/>} text="Reports" to="/reports" />
           <NavItem icon={<Settings size={18}/>} text="Settings" />
-          <div style={{marginTop: "20px"}}>
+          <div className="navbar-hover" style={{marginTop: "20px"}}>
              <NavItem icon={<HelpCircle size={18}/>} text="Help & Support" />
           </div>
         </div>

@@ -25,6 +25,10 @@ import PollDetail from "./pages/PollDetail";
 import Reports from "./pages/Reports";
 import ProtectedRoute from "./routes/ProtectedRoute";
 
+// global css
+import "./App.css";
+
+
 function App() {
   return (
     <AuthProvider>
