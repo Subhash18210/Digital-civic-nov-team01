@@ -1,6 +1,7 @@
 import React, { useContext, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import AuthContext from "../context/AuthContext";
+import API from "../api"; // <--- 1. Import API Helper
 import {
   LayoutDashboard,
   FileText,
@@ -17,59 +18,55 @@ export default function PollList() {
   const { user } = useContext(AuthContext);
   const navigate = useNavigate();
 
-  const role = user?.role?.toUpperCase(); // ✅ ROLE NORMALIZATION
+  // Normalize role (Backend usually sends lowercase 'official'/'admin')
+  const role = user?.role?.toLowerCase(); 
 
   const [activeTab, setActiveTab] = useState("Active Polls");
   const [polls, setPolls] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  /* ---------------- FETCH POLLS (SAFE) ---------------- */
+  /* ---------------- FETCH POLLS (REAL) ---------------- */
   useEffect(() => {
-    if (!user) return;
+    const fetchPolls = async () => {
+      try {
+        setLoading(true);
+        // API.get('/polls') automatically uses the logged-in user's location
+        // based on the backend logic we wrote earlier.
+        const { data } = await API.get('/polls');
+        
+        // Backend returns: { success: true, count: 5, data: [...] } OR just [...] 
+        // depending on your controller. Our controller returns { ..., data: [] }
+        setPolls(data.data || data || []); 
+      } catch (err) {
+        console.error("Failed to fetch polls:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    setLoading(true);
-
-    setTimeout(() => {
-      setPolls([
-        {
-          id: "1",
-          title: "Should plastic bags be banned?",
-          location: user.location || "Your Area",
-          totalVotes: 142,
-          status: "ACTIVE",
-          createdBy: "ADMIN",
-        },
-        {
-          id: "2",
-          title: "Which emergency service needs improvement?",
-          location: user.location || "Your Area",
-          totalVotes: 89,
-          status: "ACTIVE",
-          createdBy: "OFFICIAL",
-        },
-        {
-          id: "3",
-          title: "Priority for city cleanliness?",
-          location: user.location || "Your Area",
-          totalVotes: 56,
-          status: "CLOSED",
-          createdBy: user.email,
-        },
-      ]);
-
-      setLoading(false);
-    }, 900);
+    if (user) fetchPolls();
   }, [user]);
 
   /* ---------------- FILTER POLLS ---------------- */
   const filteredPolls = polls.filter((poll) => {
+    // Note: Backend 'status' might not exist yet if not in Schema, 
+    // assuming 'createdAt' logic or adding a status field later.
+    // For now, we assume all fetched polls are "Active" unless we add logic.
+    
+    // Check if the poll is closed (mock logic or real field if you added it)
+    // Since our backend doesn't explicitly have 'status' field in Model yet,
+    // we will treat everything as ACTIVE for now.
+    const isClosed = false; 
+
     switch (activeTab) {
       case "Active Polls":
-        return poll.status === "ACTIVE";
+        return !isClosed;
       case "Closed Polls":
-        return poll.status === "CLOSED";
+        return isClosed;
       case "My Polls":
-        return poll.createdBy === user?.email;
+        // Check if creator ID matches logged-in User ID
+        // Backend populates createdBy, so we check ._id
+        return (poll.createdBy?._id === user?._id) || (poll.createdBy === user?._id);
       default:
         return true;
     }
@@ -82,10 +79,10 @@ export default function PollList() {
         <div style={styles.profileCard}>
           <div style={styles.profileHeader}>
             <div style={styles.bigAvatar}>
-              {user?.name?.charAt(0).toUpperCase() || "A"}
+              {user?.name?.charAt(0).toUpperCase() || "U"}
             </div>
             <div>
-              <h3 style={{ margin: 0 }}>{user?.name || "User"}</h3>
+              <h3 style={{ margin: 0, fontSize: "1rem" }}>{user?.name || "User"}</h3>
               <div style={styles.profileRow}>
                 <MapPin size={14} /> {user?.location || "Not specified"}
               </div>
@@ -121,7 +118,7 @@ export default function PollList() {
           </div>
 
           {/* ✅ CREATE POLL — OFFICIAL & ADMIN ONLY */}
-          {(role === "OFFICIAL" || role === "ADMIN") && (
+          {(role === "official" || role === "admin") && (
             <Link to="/create-poll" style={styles.createBtn}>
               + Create Poll
             </Link>
@@ -153,24 +150,30 @@ export default function PollList() {
               <div style={styles.loader}>Loading polls…</div>
             ) : filteredPolls.length === 0 ? (
               <div style={styles.emptyState}>
-                <h3>No polls available</h3>
-                <p>Create a poll to start community engagement.</p>
+                <h3>No polls found</h3>
+                <p>There are no polls in this category for your location.</p>
               </div>
             ) : (
               <div style={styles.pollList}>
                 {filteredPolls.map((poll) => (
                   <div
-                    key={poll.id}
+                    key={poll._id} // MongoDB uses _id
                     style={styles.pollCard}
-                    onClick={() => navigate(`/polls/${poll.id}`)}
+                    onClick={() => navigate(`/polls/${poll._id}`)}
                   >
                     <div>
                       <h3 style={styles.pollTitle}>{poll.title}</h3>
-                      <p style={styles.pollLocation}>📍 {poll.location}</p>
+                      <p style={styles.pollLocation}>📍 {poll.targetLocation}</p>
+                      <small style={{color: '#6b7280'}}>
+                        Created by: {poll.createdBy?.name || "Official"}
+                      </small>
                     </div>
 
                     <div style={styles.voteBox}>
-                      <span style={styles.voteCount}>{poll.totalVotes}</span>
+                      {/* Backend usually doesn't send totalVotes on list view unless we aggregated it.
+                          If your backend 'getPolls' doesn't include totalVotes, this might show 0.
+                          We can fix the backend later if needed, but for now 0 is safe. */}
+                      <span style={styles.voteCount}>{poll.totalVotes || 0}</span>
                       <span style={styles.voteLabel}>Votes</span>
                     </div>
                   </div>

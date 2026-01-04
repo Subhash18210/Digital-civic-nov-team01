@@ -1,5 +1,5 @@
 import React from "react";
-import { Routes, Route, Navigate, useLocation } from "react-router-dom"; // Removed 'BrowserRouter'
+import { Routes, Route, useLocation } from "react-router-dom"; 
 import { AuthProvider } from "./context/AuthContext";
 
 // Components
@@ -19,20 +19,14 @@ import PetitionDetail from "./pages/PetitionDetail";
 // Poll Pages
 import PollList from "./pages/PollList";
 import CreatePoll from "./pages/CreatePoll";
-
-
-// Poll Details
 import PollDetail from "./pages/PollDetail";
-import ProtectedRoute from "./routes/ProtectedRoute";
 
-
-
-// Report Pages
+// Other
 import Reports from "./pages/Reports";
+import ProtectedRoute from "./routes/ProtectedRoute";
 
 function App() {
   return (
-    // <--- REMOVED <Router> TAGS HERE. 'main.jsx' is likely handling it.
     <AuthProvider>
       <Layout />
     </AuthProvider>
@@ -53,27 +47,31 @@ const Layout = () => {
       {showNavbar && <Navbar />}
 
       <Routes>
-  {/* ---------- Public Routes ---------- */}
-  <Route path="/" element={<Home />} />
-  <Route path="/login" element={<Login />} />
-  <Route path="/register" element={<Register />} />
+        {/* ---------- Public Routes ---------- */}
+        <Route path="/" element={<Home />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
 
-  {/* ---------- Protected Routes ---------- */}
-  <Route element={<ProtectedRoute />}>
-    <Route path="/dashboard" element={<Dashboard />} />
+        {/* ---------- Protected Routes ---------- */}
+        <Route element={<ProtectedRoute />}>
+          <Route path="/dashboard" element={<Dashboard />} />
 
-    <Route path="/petitions" element={<PetitionList />} />
-    <Route path="/create-petition" element={<CreatePetition />} />
-    <Route path="/petitions/:id" element={<PetitionDetail />} />
+          {/* Petitions */}
+          <Route path="/petitions" element={<PetitionList />} />
+          <Route path="/create-petition" element={<CreatePetition />} />
+          <Route path="/petitions/:id" element={<PetitionDetail />} />
 
-    <Route path="/polls" element={<PollList />} />
-    <Route path="/polls/:pollId" element={<PollDetail />} />
-    <Route path="/create-poll" element={<CreatePoll />} />
+          {/* Polls */}
+          <Route path="/polls" element={<PollList />} />
+          <Route path="/create-poll" element={<CreatePoll />} />
+          
+          {/* ⚠️ CRITICAL FIX: Changed ':pollId' to ':id' to match PollDetail.js */}
+          <Route path="/polls/:id" element={<PollDetail />} />
 
-    <Route path="/reports" element={<Reports />} />
-  </Route>
-</Routes>
-
+          {/* Reports */}
+          <Route path="/reports" element={<Reports />} />
+        </Route>
+      </Routes>
     </div>
   );
 };

@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import API from "../api"; // <--- 1. Import API Helper
+import AuthContext from "../context/AuthContext"; // <--- 2. Import Auth
 
 export default function CreatePoll() {
   const navigate = useNavigate();
-  const userRole = "OFFICIAL"; // ADMIN | OFFICIAL
+  const { user } = useContext(AuthContext); // <--- 3. Get Real User
 
   const [title, setTitle] = useState("");
   const [location, setLocation] = useState("");
@@ -14,10 +16,11 @@ export default function CreatePoll() {
 
   /* ---------------- ACCESS CONTROL ---------------- */
   useEffect(() => {
-    if (userRole !== "ADMIN" && userRole !== "OFFICIAL") {
-      navigate("/unauthorized");
+    // 4. Check Real Role
+    if (user && user.role !== "admin" && user.role !== "official") {
+      navigate("/dashboard"); // Redirect unauthorized users
     }
-  }, [userRole, navigate]);
+  }, [user, navigate]);
 
   /* ---------------- OPTIONS ---------------- */
   const addOption = () => setOptions([...options, ""]);
@@ -36,8 +39,12 @@ export default function CreatePoll() {
     const e = {};
     if (!title.trim()) e.title = "Poll title is required";
     if (!location.trim()) e.location = "Location is required";
-    if (options.filter((o) => o.trim()).length < 2)
-      e.options = "Minimum 2 options required";
+    
+    // Filter out empty options before checking length
+    const validOptions = options.filter((o) => o.trim());
+    if (validOptions.length < 2)
+      e.options = "Minimum 2 valid options required";
+      
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -48,16 +55,35 @@ export default function CreatePoll() {
     options.filter((o) => o.trim()).length >= 2;
 
   /* ---------------- SUBMIT ---------------- */
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
 
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+    setErrors({}); // Clear previous errors
+
+    try {
+      // 5. Send Real Data to Backend
+      // Note: We filter out empty option strings before sending
+      const cleanOptions = options.filter(opt => opt.trim() !== "");
+
+      await API.post('/polls', {
+        title,
+        options: cleanOptions,
+        targetLocation: location
+      });
+
       setSuccess(true);
       setTimeout(() => navigate("/polls"), 1500);
-    }, 1200);
+      
+    } catch (err) {
+      console.error("Poll creation failed:", err);
+      setErrors({ 
+        form: err.response?.data?.message || "Failed to create poll. Please try again." 
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -74,6 +100,9 @@ export default function CreatePoll() {
         </div>
 
         <form onSubmit={handleSubmit} style={styles.form}>
+          {/* Global Error Message */}
+          {errors.form && <div style={styles.errorBox}>{errors.form}</div>}
+
           {/* Poll Title */}
           <input
             type="text"
@@ -92,7 +121,7 @@ export default function CreatePoll() {
           {/* Location */}
           <input
             type="text"
-            placeholder="Location"
+            placeholder="Target Location (e.g. Hyderabad)"
             value={location}
             onChange={(e) => setLocation(e.target.value)}
             style={styles.input}
@@ -169,7 +198,7 @@ export default function CreatePoll() {
             onMouseEnter={hoverIn}
             onMouseLeave={hoverOut}
           >
-            {loading ? "Creating..." : "Create"}
+            {loading ? "Creating..." : "Create Poll"}
           </button>
         </form>
       </div>
@@ -243,11 +272,13 @@ const styles = {
     backgroundColor: "#c7e0ff",
     fontSize: "1rem",
     transition: "all 0.25s ease",
+    marginBottom: "5px" // Added small margin
   },
 
   helper: {
     fontSize: "0.8rem",
     color: "#bfdbfe",
+    marginBottom: "5px"
   },
 
   optionRowAnimated: {
@@ -255,6 +286,7 @@ const styles = {
     gap: "10px",
     alignItems: "center",
     animation: "fadeIn 0.3s ease",
+    marginBottom: "10px"
   },
 
   addBtn: {
@@ -297,6 +329,15 @@ const styles = {
     textAlign: "center",
     fontWeight: "500",
   },
+  
+  errorBox: {
+    padding: "12px",
+    backgroundColor: "#fee2e2",
+    color: "#991b1b",
+    borderRadius: "8px",
+    textAlign: "center",
+    fontWeight: "bold",
+  },
 
-  error: { color: "#fca5a5", fontSize: "0.85rem" },
+  error: { color: "#fca5a5", fontSize: "0.85rem", marginTop: "-10px", display: "block" },
 };
