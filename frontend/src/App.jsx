@@ -30,6 +30,10 @@ import ProtectedRoute from "./routes/ProtectedRoute";
 // Report Pages
 import Reports from "./pages/Reports";
 
+// global css
+import "./App.css";
+
+
 function App() {
   return (
     // <--- REMOVED <Router> TAGS HERE. 'main.jsx' is likely handling it.

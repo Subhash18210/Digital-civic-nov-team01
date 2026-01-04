@@ -131,7 +131,7 @@ const StatCard = ({ title, value }) => (
 
 // --- STYLES ---
 const styles = {
-  container: { display: "flex", minHeight: "100vh", backgroundColor: "white", padding: "20px", gap: "30px", fontFamily: "sans-serif" },
+  container: { display: "flex", minHeight: "100vh", backgroundColor: "#1e1b4b", padding: "20px", gap: "30px", fontFamily: "sans-serif" },
   sidebar: { width: "250px", display: "flex", flexDirection: "column", gap: "20px" },
   profileCard: { backgroundColor: "#bfdbfe", border: "2px solid #3b82f6", borderRadius: "10px", padding: "15px" },
   profileHeader: { display: "flex", alignItems: "center", gap: "15px" },

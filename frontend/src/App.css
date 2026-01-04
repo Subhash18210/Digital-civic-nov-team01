@@ -1,45 +1,41 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+.navbar-hover>a>div{
+  padding: 12px;
+  transition:all 0.2s ease;
+  border-radius:8px;
+  cursor: pointer;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+/* hover effect*/
+
+.navbar-hover>a>div>:hover{
+  background-color: #e0e7ff;
+  color:navy;
+  transform: translateX(4px);
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.navbar-hover > a > div:hover svg{
+  color: #1e3a8a;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+/* ============================= */
+/* SIDEBAR NAVBAR HOVER */
+/* ============================= */
+
+.navbar-hover > a > div {
+  padding: 12px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  cursor: pointer;
 }
 
-.card {
-  padding: 2em;
+/* Hover effect */
+.navbar-hover > a > div:hover {
+  background-color: #e0e7ff;
+  color: #1e3a8a;
+  transform: translateX(4px);
 }
 
-.read-the-docs {
-  color: #888;
-}
-h1 {
-  color: blue;
+/* Icon color on hover */
+.navbar-hover > a > div:hover svg {
+  color: #1e3a8a;
 }

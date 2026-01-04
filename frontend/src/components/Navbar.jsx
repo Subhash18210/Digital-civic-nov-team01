@@ -35,7 +35,7 @@ const styles = {
     backgroundColor: "white", borderBottom: "1px solid #eee",
   },
   links: { display: "flex", gap: "30px", fontWeight: "bold" },
-  link: { textDecoration: "none", color: "#9333ea", fontSize: "1rem", textTransform: "uppercase", fontWeight: "800" },
+  link: { textDecoration: "none", color: "navy", fontSize: "1rem", textTransform: "uppercase", fontWeight: "800" },
   avatarSection: { flex: 1, display: "flex", justifyContent: "flex-end" },
   avatarCircle: {
     width: "40px", height: "40px", borderRadius: "50%", backgroundColor: "#bfdbfe",
