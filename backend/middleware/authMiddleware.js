@@ -1,8 +1,8 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
-// Protect routes (login required)
-exports.protect = async (req, res, next) => {
+// 1. PROTECT (Checks if user is logged in)
+const protect = async (req, res, next) => {
   let token;
 
   if (
@@ -18,6 +18,7 @@ exports.protect = async (req, res, next) => {
 
       next();
     } catch (error) {
+      console.error(error);
       return res.status(401).json({
         message: 'Not authorized, token failed'
       });
@@ -31,14 +32,17 @@ exports.protect = async (req, res, next) => {
   }
 };
 
-// Role-based access control
-exports.authorize = (...roles) => {
+// 2. AUTHORIZE (Checks if user has the right role)
+const authorize = (...roles) => {
   return (req, res, next) => {
     if (!roles.includes(req.user.role)) {
-      return res.status(403).json({
-        message: 'User role not authorized'
+      return res.status(403).json({ 
+        message: `User role '${req.user.role}' is not authorized to access this route` 
       });
     }
     next();
   };
 };
+
+// Export BOTH functions clearly at the end
+module.exports = { protect, authorize };

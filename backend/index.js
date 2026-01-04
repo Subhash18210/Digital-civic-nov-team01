@@ -17,10 +17,12 @@ app.use(express.json());
 // Note: We use './' here, not '../' because routes are in the same folder as index.js
 const authRoutes = require('./routes/userRoutes'); 
 const petitionRoutes = require('./routes/petitionRoutes'); 
+const pollRoutes = require('./routes/pollRoutes'); // <--- ADDED THIS
 
 // 5. Use Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/petitions', petitionRoutes);
+app.use('/api/polls', pollRoutes); // <--- ADDED THIS
 
 // 6. Connect to DB
 mongoose.connect(process.env.MONGO_URI)

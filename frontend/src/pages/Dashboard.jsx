@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import AuthContext from "../context/AuthContext";
-import API from "../api"; // Import your API helper
+import API from "../api"; 
 import { 
   LayoutDashboard, FileText, BarChart2, Users, FileBarChart, Settings, 
   HelpCircle, MapPin, Mail 
@@ -24,23 +24,30 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // 1. Fetch all petitions to calculate stats
         const { data } = await API.get('/petitions');
-        const allPetitions = data.petitions || [];
+        const allPetitions = data.petitions || data || [];
 
-        // 2. Calculate "My Petitions" (Created by logged-in user)
-        // Note: backend response usually has creator object or ID. We check both.
         const myCount = allPetitions.filter(p => 
            (p.creator?._id === user?._id) || (p.creator === user?._id)
         ).length;
 
-        // 3. Calculate "Successful" (Status = closed)
         const successCount = allPetitions.filter(p => p.status === 'closed').length;
+
+        let pollsCount = 0;
+        try {
+            const pollRes = await API.get('/polls');
+            const allPolls = pollRes.data.data || pollRes.data || [];
+            pollsCount = allPolls.filter(p => 
+                (p.createdBy?._id === user?._id) || (p.createdBy === user?._id)
+            ).length;
+        } catch (e) {
+            console.log("Polls API not ready yet");
+        }
 
         setStats({
           myPetitions: myCount,
           successfulPetitions: successCount,
-          pollsCreated: 0 // Placeholder until you build Polls backend
+          pollsCreated: pollsCount
         });
 
       } catch (err) {
@@ -53,16 +60,16 @@ export default function Dashboard() {
 
   // --- NAVIGATION HANDLERS ---
   const handleCategoryClick = (category) => {
-    // Navigate to Petitions list with the selected category
     navigate(`/petitions?category=${category}`);
   };
 
   const handleStatClick = (type) => {
     if (type === 'mine') {
-       // Ideally you'd filter by 'mine' in the list, for now just go to list
-       navigate('/petitions');
+       navigate('/petitions'); 
     } else if (type === 'successful') {
-       navigate('/petitions?status=closed');
+       navigate('/petitions');
+    } else if (type === 'polls') {
+       navigate('/polls');
     }
   };
 
@@ -70,13 +77,23 @@ export default function Dashboard() {
 
   return (
     <div style={styles.container}>
+      {/* CSS Hack to force Options to be Black text if browser defaults to white bg */}
+      <style>
+        {`
+          select option {
+            background-color: #1e1b4b;
+            color: white;
+          }
+        `}
+      </style>
+
       {/* --- SIDEBAR --- */}
       <div style={styles.sidebar}>
         <div style={styles.profileCard}>
           <div style={styles.profileHeader}>
             <div style={styles.bigAvatar}>{user?.name?.charAt(0).toUpperCase() || "U"}</div>
             <div>
-                <h3 style={{margin: 0, fontSize: "1.1rem"}}>{user?.name || "User Name"}</h3>
+                <h3 style={{margin: 0, fontSize: "1rem", color: 'white'}}>{user?.name || "User Name"}</h3>
                 <div style={styles.profileRow}><MapPin size={14} /> {user?.location || "Location"}</div>
                 <div style={styles.profileRow}><Mail size={14} /> {user?.email || "Email"}</div>
             </div>
@@ -100,7 +117,11 @@ export default function Dashboard() {
         
         <div style={styles.banner}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h2>Welcome to Digital Civic Engagement</h2>
+            <div>
+                <h2 style={{margin: 0, fontSize: '1.8rem'}}>Welcome Back, {user?.name}</h2>
+                <p style={{margin: '5px 0 0', color: '#cbd5f5'}}>Here is what's happening in your community today.</p>
+            </div>
+            
             <select style={styles.dropdown}>
               <option value="last_30">Last 30 Days</option>
               <option value="last_6_months">Last 6 Months</option>
@@ -112,29 +133,32 @@ export default function Dashboard() {
         {/* DYNAMIC STAT BUTTONS */}
         <div style={styles.statsGrid}>
            <button style={styles.statCard} onClick={() => handleStatClick('mine')}>
+             <div style={styles.iconCircle}><FileText size={24} color="#60a5fa" /></div>
              <h3 style={styles.statNumber}>{stats.myPetitions}</h3>
              <span style={styles.statLabel}>My Petitions</span>
            </button>
            
            <button style={styles.statCard} onClick={() => handleStatClick('successful')}>
+             <div style={styles.iconCircle}><Users size={24} color="#4ade80" /></div>
              <h3 style={styles.statNumber}>{stats.successfulPetitions}</h3>
-             <span style={styles.statLabel}>Successful (Closed)</span>
+             <span style={styles.statLabel}>Successful Petitions</span>
            </button>
            
-           <button style={styles.statCard}>
+           <button style={styles.statCard} onClick={() => handleStatClick('polls')}>
+             <div style={styles.iconCircle}><BarChart2 size={24} color="#f472b6" /></div>
              <h3 style={styles.statNumber}>{stats.pollsCreated}</h3>
-             <span style={styles.statLabel}>Polls Created</span>
+             <span style={styles.statLabel}>My Polls</span>
            </button>
         </div>
 
         {/* DYNAMIC CATEGORY BUTTONS */}
-        <h3 style={{color: '#333', marginBottom: '10px'}}>Browse by Category</h3>
+        <h3 style={{color: 'white', marginBottom: '10px', marginTop: '10px'}}>Browse by Category</h3>
         <div style={styles.categoryGrid}>
            {categories.map((cat, index) => (
              <button 
-                key={index} 
-                style={styles.oval}
-                onClick={() => handleCategoryClick(cat)}
+               key={index} 
+               style={styles.oval}
+               onClick={() => handleCategoryClick(cat)}
              >
                {cat}
              </button>
@@ -147,34 +171,123 @@ export default function Dashboard() {
 
 const NavItem = ({ icon, text, active, to }) => (
   <Link to={to || "#"} style={{ textDecoration: "none", color: "inherit" }}>
-    <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px", color: active ? "#000080" : "#333", fontWeight: active ? "bold" : "normal" }}>
+    <div style={{ 
+        display: "flex", 
+        alignItems: "center", 
+        gap: "10px", 
+        padding: "12px", 
+        color: active ? "white" : "#cbd5f5", 
+        backgroundColor: active ? "rgba(255,255,255,0.1)" : "transparent",
+        borderRadius: "8px",
+        fontWeight: active ? "600" : "normal",
+        transition: "all 0.2s"
+    }}>
       {icon} <span>{text}</span>
     </div>
   </Link>
 );
 
 const styles = {
-  container: { display: "flex", minHeight: "100vh", backgroundColor: "rgb(42, 10, 74)", padding: "20px", gap: "30px", fontFamily: "sans-serif" },
-  sidebar: { width: "250px", display: "flex", flexDirection: "column", gap: "20px" },
-  profileCard: { backgroundColor: "white", borderRadius: "10px", padding: "15px" ,color:'navy' },
+  container: { 
+    display: "flex", 
+    minHeight: "100vh", 
+    background: "radial-gradient(circle at top, #2a0a4a, #120020)", // PURPLE THEME
+    padding: "20px", 
+    gap: "30px", 
+    fontFamily: "Inter, sans-serif",
+    color: "white"
+  },
+  
+  sidebar: { width: "260px", display: "flex", flexDirection: "column", gap: "20px" },
+  
+  profileCard: { 
+    backgroundColor: "#1e1b4b", // Dark Blue/Purple
+    borderRadius: "14px", 
+    padding: "16px",
+    border: "1px solid rgba(255,255,255,0.1)"
+  },
+  
   profileHeader: { display: "flex", alignItems: "center", gap: "15px" },
-  bigAvatar: { width: "45px", height: "45px", borderRadius: "50%", backgroundColor: "#60a5fa", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "bold", fontSize: "1.2rem" },
-  profileRow: { display: "flex", alignItems: "center", gap: "5px", fontSize: "0.85rem", marginTop: "3px", color: "#333" },
-  menu: { backgroundColor: "#ffff", borderRadius: "10px", padding: "20px", flex: 1 },
   
-  main: { flex: 1, display: "flex", flexDirection: "column", gap: "30px", paddingTop: "20px" },
-  banner: { backgroundColor: "#ffff", padding: "30px", borderRadius: "5px", fontWeight: "bold", textAlign: "left",color:'navy' },
+  bigAvatar: { 
+    width: "48px", 
+    height: "48px", 
+    borderRadius: "50%", 
+    backgroundColor: "#2563eb", 
+    display: "flex", 
+    alignItems: "center", 
+    justifyContent: "center", 
+    fontWeight: "bold", 
+    fontSize: "1.2rem",
+    color: "white"
+  },
   
-  dropdown: { padding: "8px", borderRadius: "5px", color: "#000000", border: "1px solid #3b82f6", backgroundColor: "white", cursor: "pointer", fontWeight: "bold" },
+  profileRow: { display: "flex", alignItems: "center", gap: "5px", fontSize: "0.85rem", marginTop: "4px", color: "#cbd5f5" },
+  
+  menu: { 
+    backgroundColor: "#1e1b4b", 
+    borderRadius: "14px", 
+    padding: "20px", 
+    flex: 1,
+    border: "1px solid rgba(255,255,255,0.1)"
+  },
+  
+  main: { flex: 1, display: "flex", flexDirection: "column", gap: "25px", paddingTop: "10px" },
+  
+  banner: { 
+    padding: "10px 0", 
+    textAlign: "left" 
+  },
+  
+  dropdown: { 
+    padding: "8px 12px", 
+    borderRadius: "8px", 
+    color: "white", 
+    border: "1px solid rgba(255,255,255,0.2)", 
+    // FIXED: Use a solid dark color so browser knows it's dark mode
+    backgroundColor: "#1e1b4b", 
+    cursor: "pointer", 
+    outline: "none"
+  },
 
   statsGrid: { display: "flex", gap: "20px" },
   
-  // Updated Stat Card for Numbers
-  statCard: { flex: 1, height: "150px", backgroundColor: "#ffff", borderRadius: "10px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "20px", border: "none", cursor: "pointer", transition: "0.2s" },
-  statNumber: { fontSize: "2.5rem", margin: 0, color: "#1e3a8a" },
-  statLabel: { fontSize: "1.1rem", fontWeight: "bold", color: "#1e3a8a" },
-
-  categoryGrid: { display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "20px", marginTop: "10px" },
+  statCard: { 
+    flex: 1, 
+    height: "160px", 
+    backgroundColor: "rgba(255,255,255,0.05)", 
+    borderRadius: "16px", 
+    display: "flex", 
+    flexDirection: "column", 
+    alignItems: "center", 
+    justifyContent: "center", 
+    padding: "20px", 
+    border: "1px solid rgba(255,255,255,0.1)", 
+    cursor: "pointer", 
+    transition: "transform 0.2s",
+    color: "white"
+  },
   
-  oval: { backgroundColor: "#ffff", borderRadius: "50px", padding: "15px", textAlign: "center", fontWeight: "bold", fontStyle: "italic", cursor: "pointer", border: "none", fontSize: "1rem", transition: "0.2s", color: "#1e3a8a" }
+  iconCircle: {
+      width: '40px', height: '40px', borderRadius: '50%', backgroundColor: 'rgba(255,255,255,0.1)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '10px'
+  },
+  
+  statNumber: { fontSize: "2.5rem", margin: 0, fontWeight: "700" },
+  statLabel: { fontSize: "0.9rem", color: "#cbd5f5", marginTop: "5px" },
+
+  categoryGrid: { display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "15px" },
+  
+  oval: { 
+    backgroundColor: "rgba(255,255,255,0.08)", 
+    borderRadius: "50px", 
+    padding: "16px", 
+    textAlign: "center", 
+    fontWeight: "500", 
+    cursor: "pointer", 
+    border: "1px solid rgba(255,255,255,0.05)", 
+    fontSize: "1rem", 
+    transition: "background 0.2s", 
+    color: "#e0e7ff"
+  }
 };
