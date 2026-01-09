@@ -272,7 +272,8 @@ const styles = {
     backgroundColor: "#c7e0ff",
     fontSize: "1rem",
     transition: "all 0.25s ease",
-    marginBottom: "5px" // Added small margin
+    marginBottom: "5px", // Added small margin
+    color:"black"
   },
 
   helper: {

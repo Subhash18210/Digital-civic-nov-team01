@@ -49,7 +49,7 @@ export default function CreatePetition() {
           onChange={handleChange}
           placeholder="Petition Title"
           required
-          style={{ ...styles.input, height: "50px", border: "2px solid #3b82f6" }} 
+          style={{ ...styles.input, height: "50px", border: "2px solid #8875ceff" }} 
         />
 
         <div style={styles.row}>
@@ -71,7 +71,7 @@ export default function CreatePetition() {
               <option value="Others">Others</option>
             </select>
           </div>
-          <div style={{ flex: 1 }}>
+          <div style={{ flex: 1, }}>
             <label style={styles.label}>Location</label>
             <input 
                 name="location" 
@@ -117,7 +117,7 @@ const styles = {
   form: { display: "flex", flexDirection: "column", gap: "15px" },
   input: {
     width: "100%", padding: "10px", backgroundColor: "#bfdbfe",
-    border: "1px solid #ccc", borderRadius: "5px", outline: "none", boxSizing: "border-box"
+    border: "1px solid #ccc", borderRadius: "5px", outline: "none", boxSizing: "border-box" , color: "black"
   },
   label: { fontWeight: "bold", marginBottom: "5px", display: "block" },
   row: { display: "flex", gap: "40px" },
