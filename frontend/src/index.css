@@ -1,0 +1,55 @@
+/* 1. Global Reset */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  color-scheme: dark;
+}
+
+/* 2. Main Body Styling */
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: #1a0b2e; /* Purple Theme */
+  color: white;
+
+  /* ENABLE Vertical Scrolling */
+  overflow-y: auto; 
+  /* DISABLE Horizontal Scrolling */
+  overflow-x: hidden;
+
+  /* HIDE Scrollbars (Firefox) */
+  scrollbar-width: none; 
+  /* HIDE Scrollbars (IE/Edge) */
+  -ms-overflow-style: none; 
+}
+
+/* 3. Hide Scrollbars (Chrome, Safari, Opera) */
+body::-webkit-scrollbar {
+  display: none; /* This makes the bar invisible */
+}
+
+/* 4. App Container */
+#root {
+  width: 100%;
+  min-height: 100vh; /* Allow it to grow if content is long */
+}
+
+/* 5. Link Styles */
+a {
+  font-weight: 500;
+  color: #a855f7;
+  text-decoration: inherit;
+  transition: 0.3s;
+}
+a:hover {
+  color: #d8b4fe;
+}

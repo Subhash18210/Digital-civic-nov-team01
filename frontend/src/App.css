@@ -1,0 +1,41 @@
+.navbar-hover>a>div{
+  padding: 12px;
+  transition:all 0.2s ease;
+  border-radius:8px;
+  cursor: pointer;
+}
+
+/* hover effect*/
+
+.navbar-hover>a>div>:hover{
+  background-color: #e0e7ff;
+  color:navy;
+  transform: translateX(4px);
+}
+
+.navbar-hover > a > div:hover svg{
+  color: #1e3a8a;
+}
+
+/* ============================= */
+/* SIDEBAR NAVBAR HOVER */
+/* ============================= */
+
+.navbar-hover > a > div {
+  padding: 12px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+/* Hover effect */
+.navbar-hover > a > div:hover {
+  background-color: #e0e7ff;
+  color: #1e3a8a;
+  transform: translateX(4px);
+}
+
+/* Icon color on hover */
+.navbar-hover > a > div:hover svg {
+  color: #1e3a8a;
+}
