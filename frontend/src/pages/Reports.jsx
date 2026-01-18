@@ -1,305 +1,557 @@
-import React, { useContext, useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import React, { useContext, useEffect, useMemo, useState } from "react";
 import AuthContext from "../context/AuthContext";
-import API from "../api"; // Import API to fetch real data
-import { 
-  LayoutDashboard, FileText, BarChart2, Users, FileBarChart, Settings, 
-  HelpCircle, MapPin, Mail, Download, PieChart as PieIcon, Activity
-} from "lucide-react";
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
+import { CalendarDays, MapPin, BarChart3, Download, FileText } from "lucide-react";
 
 export default function Reports() {
   const { user } = useContext(AuthContext);
 
-  // State for Real Data
-  const [stats, setStats] = useState({
-    totalPetitions: 0,
-    activePetitions: 0,
-    closedPetitions: 0,
-    totalPolls: 0,
-    totalSignatures: 0
-  });
+  // ----------- Default: current month -----------
+  const getMonthStart = () => {
+    const d = new Date();
+    return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0, 10);
+  };
+
+  const getMonthEnd = () => {
+    const d = new Date();
+    return new Date(d.getFullYear(), d.getMonth() + 1, 0).toISOString().slice(0, 10);
+  };
+
+  const [fromDate, setFromDate] = useState(getMonthStart());
+  const [toDate, setToDate] = useState(getMonthEnd());
+  const [location, setLocation] = useState(user?.location || "");
 
   const [loading, setLoading] = useState(true);
 
-  // --- FETCH REAL DATA ---
+  // ----------- Metrics -----------
+  const [metrics, setMetrics] = useState({
+    petitionsCreated: 0,
+    petitionsResolved: 0,
+    petitionsPending: 0,
+    totalSignatures: 0,
+    totalVotes: 0,
+  });
+
+  // ----------- Trend data -----------
+  const [trendData, setTrendData] = useState([]);
+
+  /* ---------------- FETCH REPORTS (SIMULATED) ---------------- */
   useEffect(() => {
-    const fetchReportData = async () => {
-      try {
-        // 1. Fetch Petitions
-        const { data: petData } = await API.get('/petitions');
-        const petitions = petData.petitions || petData || [];
+    setLoading(true);
 
-        const active = petitions.filter(p => p.status === 'active').length;
-        const closed = petitions.filter(p => p.status === 'closed' || p.status === 'resolved').length;
-        const signatures = petitions.reduce((acc, curr) => acc + (curr.signatureCount || 0), 0);
+    setTimeout(() => {
+      const mock = {
+        petitionsCreated: 86,
+        petitionsResolved: 44,
+        petitionsPending: 42,
+        totalSignatures: 1290,
+        totalVotes: 780,
+      };
 
-        // 2. Fetch Polls (Mocking if API not ready, or real if ready)
-        let pollsCount = 0;
-        try {
-            const { data: pollData } = await API.get('/polls');
-            const polls = pollData.data || pollData || [];
-            pollsCount = polls.length;
-        } catch (e) {
-            console.log("Polls API skipped");
-        }
+      const mockTrend = [
+        { label: "W1", petitions: 18, votes: 120 },
+        { label: "W2", petitions: 22, votes: 160 },
+        { label: "W3", petitions: 26, votes: 210 },
+        { label: "W4", petitions: 20, votes: 290 },
+      ];
 
-        setStats({
-          totalPetitions: petitions.length,
-          activePetitions: active,
-          closedPetitions: closed,
-          totalPolls: pollsCount,
-          totalSignatures: signatures
-        });
-        setLoading(false);
+      setMetrics(mock);
+      setTrendData(mockTrend);
+      setLoading(false);
+    }, 700);
+  }, [fromDate, toDate, location]);
 
-      } catch (err) {
-        console.error("Error fetching report data", err);
-        setLoading(false);
-      }
-    };
+  const totalPetitions = useMemo(() => {
+    return metrics.petitionsResolved + metrics.petitionsPending;
+  }, [metrics]);
 
-    if (user) fetchReportData();
-  }, [user]);
+  const petitionResolvedPercent = useMemo(() => {
+    if (totalPetitions === 0) return 0;
+    return Math.round((metrics.petitionsResolved / totalPetitions) * 100);
+  }, [metrics, totalPetitions]);
 
-  // Data for the Pie Chart
-  const petitionChartData = [
-    { name: 'Active', value: stats.activePetitions },
-    { name: 'Closed/Resolved', value: stats.closedPetitions },
-  ];
-  
-  // Colors: Bright Blue & Purple for Dark Theme
-  const COLORS = ['#3b82f6', '#a855f7']; 
+  const maxVotes = useMemo(() => Math.max(...trendData.map((x) => x.votes), 1), [trendData]);
+  const maxPetitions = useMemo(
+    () => Math.max(...trendData.map((x) => x.petitions), 1),
+    [trendData]
+  );
+
+  /* ---------------- EXPORT: CSV ---------------- */
+  const exportCSV = () => {
+    // Respect filters in filename
+    const fileName = `reports_${location || "ALL"}_${fromDate}_to_${toDate}.csv`;
+
+    // Build CSV rows (metrics + trend)
+    const rows = [];
+
+    rows.push(["REPORT FILTERS"]);
+    rows.push(["From Date", fromDate]);
+    rows.push(["To Date", toDate]);
+    rows.push(["Location", location || "All Locations"]);
+    rows.push([]);
+
+    rows.push(["METRICS"]);
+    rows.push(["Total Petitions Created", metrics.petitionsCreated]);
+    rows.push(["Petitions Resolved", metrics.petitionsResolved]);
+    rows.push(["Pending Petitions", metrics.petitionsPending]);
+    rows.push(["Total Signatures", metrics.totalSignatures]);
+    rows.push(["Total Votes (Polls)", metrics.totalVotes]);
+    rows.push([]);
+
+    rows.push(["TREND DATA"]);
+    rows.push(["Week", "Petitions", "Votes"]);
+    trendData.forEach((t) => {
+      rows.push([t.label, t.petitions, t.votes]);
+    });
+
+    // Convert to CSV string safely
+    const csvString = rows
+      .map((row) =>
+        row
+          .map((cell) => {
+            const safe = String(cell ?? "");
+            // Escape quotes
+            return `"${safe.replace(/"/g, '""')}"`;
+          })
+          .join(",")
+      )
+      .join("\n");
+
+    // Download in browser
+    const blob = new Blob([csvString], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = fileName;
+    link.click();
+
+    URL.revokeObjectURL(url);
+  };
+
+  /* ---------------- EXPORT: PDF (OPTIONAL) ---------------- */
+  const exportPDF = () => {
+    // Simple way: print the dashboard card section
+    window.print();
+  };
 
   return (
-    <div style={styles.container}>
-      
-      {/* --- SIDEBAR --- */}
-      <div style={styles.sidebar}>
-        <div style={styles.profileCard}>
-          <div style={styles.profileHeader}>
-            <div style={styles.bigAvatar}>{user?.name?.charAt(0).toUpperCase() || "U"}</div>
-            <div>
-                <h3 style={{margin: 0, fontSize: "1rem", color: 'white'}}>{user?.name || "User"}</h3>
-                <div style={styles.profileRow}><MapPin size={14} /> {user?.location || "Location"}</div>
-                <div style={styles.profileRow}><Mail size={14} /> {user?.email || "Email"}</div>
-            </div>
-          </div>
-        </div>
-
-        <div style={styles.menu}>
-          <NavItem icon={<LayoutDashboard size={18}/>} text="Dashboard" to="/dashboard" />
-          <NavItem icon={<FileText size={18}/>} text="Petitions" to="/petitions" />
-          <NavItem icon={<BarChart2 size={18}/>} text="Polls" to="/polls" />
-          <NavItem icon={<Users size={18}/>} text="Officials" />
-          <NavItem icon={<FileBarChart size={18}/>} text="Reports" active />
-          <NavItem icon={<Settings size={18}/>} text="Settings" />
-          <div style={{marginTop: "20px"}}>
-             <NavItem icon={<HelpCircle size={18}/>} text="Help & Support" />
-          </div>
-        </div>
-      </div>
-
-      {/* --- MAIN CONTENT --- */}
-      <div style={styles.main}>
-        
-        {/* Page Title & Export Button */}
+    <div style={styles.page}>
+      <div style={styles.container}>
+        {/* ---------------- HEADER ---------------- */}
         <div style={styles.headerRow}>
-            <div>
-                <h1 style={styles.pageTitle}>Reports & Analytics</h1>
-                <p style={styles.pageSubtitle}>
-                    Track civic engagement and measure impact.
-                </p>
+          <div>
+            <h1 style={styles.title}>Reports Dashboard</h1>
+            <p style={styles.subtitle}>
+              Track petitions & polls performance for <b>{location || "your region"}</b>
+            </p>
+          </div>
+
+          <div style={styles.headerRight}>
+            <div style={styles.badge}>
+              <BarChart3 size={16} />
+              Analytics
             </div>
-            <button style={styles.exportBtn}>
-                <Download size={16} /> Export CSV
+
+            <button
+              onClick={exportCSV}
+              style={styles.exportBtn}
+              disabled={loading}
+              title="Download CSV"
+            >
+              <Download size={16} />
+              Export CSV
             </button>
+
+            <button
+              onClick={exportPDF}
+              style={styles.exportBtnSecondary}
+              disabled={loading}
+              title="Export PDF (Print)"
+            >
+              <FileText size={16} />
+              Export PDF
+            </button>
+          </div>
         </div>
 
-        {/* 3 Stats Cards Row */}
-        <div style={styles.statsRow}>
-           <StatCard 
-              title="Total Petitions" 
-              value={stats.totalPetitions} 
-              icon={<FileText size={24} color="#60a5fa"/>} 
-           />
-           <StatCard 
-              title="Total Polls" 
-              value={stats.totalPolls} 
-              icon={<PieIcon size={24} color="#f472b6"/>} 
-           />
-           <StatCard 
-              title="Total Signatures" 
-              value={stats.totalSignatures} 
-              icon={<Activity size={24} color="#4ade80"/>} 
-           />
-        </div>
+        {/* ---------------- FILTERS ---------------- */}
+        <div style={styles.filtersCard}>
+          <div style={styles.filterTitle}>
+            <CalendarDays size={18} />
+            Filters
+          </div>
 
-        {/* Charts Row */}
-        <div style={styles.chartsRow}>
-            
-            {/* Chart 1: Petitions Status */}
-            <div style={styles.chartBox}>
-                <h3 style={styles.chartTitle}>Petition Status Breakdown</h3>
-                <div style={{width: "100%", height: "250px"}}>
-                    <ResponsiveContainer>
-                        <PieChart>
-                            <Pie
-                                data={petitionChartData}
-                                cx="50%"
-                                cy="50%"
-                                innerRadius={60}
-                                outerRadius={80}
-                                paddingAngle={5}
-                                dataKey="value"
-                            >
-                                {petitionChartData.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="none" />
-                                ))}
-                            </Pie>
-                            <Tooltip 
-                                contentStyle={{backgroundColor: '#1e1b4b', border: 'none', borderRadius: '8px', color: '#fff'}}
-                                itemStyle={{color: '#fff'}}
-                            />
-                            <Legend verticalAlign="bottom" height={36} iconType="circle"/>
-                        </PieChart>
-                    </ResponsiveContainer>
-                </div>
+          <div style={styles.filtersGrid}>
+            <div style={styles.filterGroup}>
+              <label style={styles.label}>From</label>
+              <input
+                type="date"
+                value={fromDate}
+                onChange={(e) => setFromDate(e.target.value)}
+                style={styles.input}
+              />
             </div>
 
-            {/* Placeholder for Second Chart (e.g., Monthly Activity) */}
-            <div style={styles.chartBox}>
-                <h3 style={styles.chartTitle}>Engagement Summary</h3>
-                <div style={styles.summaryText}>
-                    <p><strong>{stats.activePetitions}</strong> active petitions are currently gathering signatures.</p>
-                    <p><strong>{stats.totalSignatures}</strong> citizens have engaged with causes in your area.</p>
-                    <p style={{marginTop: '20px', fontSize: '0.9rem', color: '#cbd5f5'}}>
-                        * More detailed analytics will appear here as more data is collected over time.
-                    </p>
-                </div>
+            <div style={styles.filterGroup}>
+              <label style={styles.label}>To</label>
+              <input
+                type="date"
+                value={toDate}
+                onChange={(e) => setToDate(e.target.value)}
+                style={styles.input}
+              />
             </div>
+
+            <div style={styles.filterGroup}>
+              <label style={styles.label}>
+                <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                  <MapPin size={14} /> Location
+                </span>
+              </label>
+              <select
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                style={styles.input}
+              >
+                <option value="">All Locations</option>
+                <option value="Dehradun">Dehradun</option>
+                <option value="Haridwar">Haridwar</option>
+                <option value="Rishikesh">Rishikesh</option>
+              </select>
+            </div>
+          </div>
         </div>
 
+        {/* ---------------- METRICS ---------------- */}
+        <div style={styles.metricsGrid}>
+          <MetricCard
+            title="Total Petitions Created"
+            value={loading ? "..." : metrics.petitionsCreated}
+            hint="All petitions created in selected period"
+          />
+          <MetricCard
+            title="Petitions Resolved"
+            value={loading ? "..." : metrics.petitionsResolved}
+            hint={`Resolved rate: ${petitionResolvedPercent}%`}
+          />
+          <MetricCard
+            title="Pending Petitions"
+            value={loading ? "..." : metrics.petitionsPending}
+            hint="Still under review / action"
+          />
+          <MetricCard
+            title="Total Signatures"
+            value={loading ? "..." : metrics.totalSignatures}
+            hint="Signatures collected on petitions"
+          />
+          <MetricCard
+            title="Total Votes (Polls)"
+            value={loading ? "..." : metrics.totalVotes}
+            hint="Votes recorded on polls"
+          />
+        </div>
+
+        {/* ---------------- CHARTS ---------------- */}
+        <div style={styles.chartsGrid}>
+          {/* BAR CHART */}
+          <div style={styles.chartCard}>
+            <h3 style={styles.chartTitle}>Votes by Week (Bar)</h3>
+
+            {loading ? (
+              <div style={styles.chartLoading}>Loading chart…</div>
+            ) : (
+              <div style={styles.barChart}>
+                {trendData.map((item) => {
+                  const height = Math.round((item.votes / maxVotes) * 100);
+                  return (
+                    <div key={item.label} style={styles.barCol}>
+                      <div style={styles.barTrack}>
+                        <div style={{ ...styles.barFill, height: `${height}%` }} />
+                      </div>
+                      <div style={styles.barLabel}>{item.label}</div>
+                      <div style={styles.barValue}>{item.votes}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* LINE CHART */}
+          <div style={styles.chartCard}>
+            <h3 style={styles.chartTitle}>Petitions Trend (Line)</h3>
+
+            {loading ? (
+              <div style={styles.chartLoading}>Loading chart…</div>
+            ) : (
+              <div style={styles.lineChart}>
+                {trendData.map((item) => {
+                  const width = Math.round((item.petitions / maxPetitions) * 100);
+                  return (
+                    <div key={item.label} style={styles.lineRow}>
+                      <div style={styles.lineLeft}>
+                        <span style={styles.lineLabel}>{item.label}</span>
+                        <span style={styles.lineNumber}>{item.petitions}</span>
+                      </div>
+                      <div style={styles.lineTrack}>
+                        <div style={{ ...styles.lineFill, width: `${width}%` }} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div style={styles.note}>
+          Note: CSV export respects current filters (date range + location).
+        </div>
       </div>
+
+      {/* PRINT STYLES for PDF */}
+      <style>
+        {`
+          @media print {
+            body {
+              background: white !important;
+              color: black !important;
+            }
+            button {
+              display: none !important;
+            }
+          }
+        `}
+      </style>
     </div>
   );
 }
 
-// Helper Components
-const NavItem = ({ icon, text, active, to }) => (
-  <Link to={to || "#"} style={{ textDecoration: "none", color: "inherit" }}>
-    <div style={{ 
-        display: "flex", 
-        alignItems: "center", 
-        gap: "10px", 
-        padding: "12px", 
-        color: active ? "white" : "#cbd5f5", 
-        backgroundColor: active ? "rgba(255,255,255,0.1)" : "transparent",
-        borderRadius: "8px",
-        fontWeight: active ? "600" : "normal",
-        transition: "all 0.2s"
-    }}>
-      {icon} <span>{text}</span>
+/* ---------------- METRIC CARD ---------------- */
+function MetricCard({ title, value, hint }) {
+  return (
+    <div style={styles.metricCard}>
+      <div style={styles.metricTitle}>{title}</div>
+      <div style={styles.metricValue}>{value}</div>
+      <div style={styles.metricHint}>{hint}</div>
     </div>
-  </Link>
-);
+  );
+}
 
-const StatCard = ({ title, value, icon }) => (
-    <div style={styles.statCard}>
-        <div style={styles.iconCircle}>
-            {icon}
-        </div>
-        <div>
-            <h2 style={styles.statValue}>{value}</h2>
-            <p style={styles.statTitle}>{title}</p>
-        </div>
-    </div>
-);
-
-// --- STYLES ---
+/* ---------------- STYLES ---------------- */
 const styles = {
-  container: { 
-    display: "flex", 
-    minHeight: "100vh", 
-    background: "radial-gradient(circle at top, #2a0a4a, #120020)", // Purple Theme
-    padding: "20px", 
-    gap: "30px", 
+  page: {
+    minHeight: "100vh",
+    background: "radial-gradient(circle at top, #2a0a4a, #120020)",
+    color: "white",
     fontFamily: "Inter, sans-serif",
-    color: "white"
+    padding: "30px 18px",
   },
-  
-  sidebar: { width: "260px", display: "flex", flexDirection: "column", gap: "20px" },
-  
-  profileCard: { 
-    backgroundColor: "#1e1b4b", 
-    borderRadius: "14px", 
-    padding: "16px",
-    border: "1px solid rgba(255,255,255,0.1)"
-  },
-  
 
-  profileHeader: { display: "flex", alignItems: "center", gap: "15px" },
-  
-  bigAvatar: { 
-    width: "48px", height: "48px", borderRadius: "50%", 
-    backgroundColor: "#2563eb", display: "flex", alignItems: "center", justifyContent: "center", 
-    fontWeight: "bold", fontSize: "1.2rem", color: "white"
+  container: {
+    maxWidth: "1100px",
+    margin: "0 auto",
+    display: "flex",
+    flexDirection: "column",
+    gap: "18px",
   },
-  
-  profileRow: { display: "flex", alignItems: "center", gap: "5px", fontSize: "0.85rem", marginTop: "4px", color: "#cbd5f5" },
-  
-  menu: { 
-    backgroundColor: "#1e1b4b", borderRadius: "14px", padding: "20px", flex: 1, border: "1px solid rgba(255,255,255,0.1)"
+
+  headerRow: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: "14px",
   },
-  
-  main: { flex: 1, display: "flex", flexDirection: "column", gap: "30px", paddingTop: "10px" },
-  
-  headerRow: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "10px" },
-  
-  pageTitle: { fontSize: "1.8rem", fontWeight: "700", margin: 0 },
-  pageSubtitle: { margin: "5px 0 0 0", color: "#cbd5f5" },
-  
+
+  headerRight: {
+    display: "flex",
+    gap: "10px",
+    flexWrap: "wrap",
+    justifyContent: "flex-end",
+  },
+
+  title: { margin: 0, fontSize: "2rem", fontWeight: 700 },
+  subtitle: { margin: "6px 0 0", color: "#cbd5f5", fontSize: "0.95rem" },
+
+  badge: {
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    padding: "10px 14px",
+    borderRadius: "999px",
+    backgroundColor: "rgba(255,255,255,0.08)",
+    border: "1px solid rgba(255,255,255,0.12)",
+    color: "#cbd5f5",
+    fontWeight: 600,
+    fontSize: "0.9rem",
+  },
+
   exportBtn: {
-      backgroundColor: "#2563eb", color: "white", border: "none", padding: "10px 18px", 
-      borderRadius: "8px", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px", fontWeight: "600",
-      transition: "background 0.2s"
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    padding: "10px 14px",
+    borderRadius: "10px",
+    border: "none",
+    cursor: "pointer",
+    fontWeight: 700,
+    backgroundColor: "#2563eb",
+    color: "white",
   },
-  
-  statsRow: { display: "flex", gap: "20px" },
-  
-  statCard: {
-      flex: 1, 
-      backgroundColor: "rgba(255,255,255,0.05)", // Glassmorphism
-      padding: "24px", 
-      borderRadius: "16px", 
-      display: "flex",
-      alignItems: "center",
-      gap: "20px",
-      border: "1px solid rgba(255,255,255,0.1)"
-  },
-  
-  iconCircle: {
-      width: '50px', height: '50px', borderRadius: '50%', backgroundColor: 'rgba(255,255,255,0.1)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center'
-  },
-  
-  statValue: { margin: 0, fontSize: "2rem", fontWeight: "700" },
-  statTitle: { margin: "5px 0 0 0", color: "#cbd5f5", fontSize: "0.9rem" },
 
-  chartsRow: { display: "flex", gap: "20px", marginTop: "10px" },
-  
-  chartBox: {
-      flex: 1, 
-      backgroundColor: "rgba(255,255,255,0.05)", // Glassmorphism
-      padding: "24px", 
-      borderRadius: "16px", 
-      minHeight: "300px",
-      border: "1px solid rgba(255,255,255,0.1)"
+  exportBtnSecondary: {
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    padding: "10px 14px",
+    borderRadius: "10px",
+    border: "1px solid rgba(255,255,255,0.18)",
+    cursor: "pointer",
+    fontWeight: 700,
+    backgroundColor: "rgba(255,255,255,0.08)",
+    color: "white",
   },
-  
-  chartTitle: { margin: "0 0 20px 0", fontSize: "1.1rem", fontWeight: "600" },
-  
-  summaryText: {
-      color: "#e2e8f0", lineHeight: "1.6", fontSize: "1rem"
-  }
+
+  filtersCard: {
+    padding: "18px",
+    borderRadius: "16px",
+    backgroundColor: "rgba(255,255,255,0.06)",
+    border: "1px solid rgba(255,255,255,0.12)",
+  },
+
+  filterTitle: {
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
+    fontWeight: 700,
+    marginBottom: "12px",
+  },
+
+  filtersGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(3, 1fr)",
+    gap: "14px",
+  },
+
+  filterGroup: { display: "flex", flexDirection: "column", gap: "6px" },
+  label: { fontSize: "0.85rem", color: "#cbd5f5" },
+
+  input: {
+    padding: "12px 12px",
+    borderRadius: "10px",
+    border: "1px solid rgba(255,255,255,0.18)",
+    backgroundColor: "rgba(255,255,255,0.08)",
+    color: "white",
+    outline: "none",
+    fontSize: "0.95rem",
+  },
+
+  metricsGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(5, 1fr)",
+    gap: "14px",
+  },
+
+  metricCard: {
+    padding: "16px",
+    borderRadius: "16px",
+    backgroundColor: "rgba(255,255,255,0.06)",
+    border: "1px solid rgba(255,255,255,0.12)",
+  },
+
+  metricTitle: { fontSize: "0.85rem", color: "#cbd5f5", fontWeight: 600 },
+  metricValue: { fontSize: "1.6rem", fontWeight: 800, marginTop: "6px" },
+  metricHint: { fontSize: "0.8rem", color: "#cbd5f5", marginTop: "6px" },
+
+  chartsGrid: {
+    display: "grid",
+    gridTemplateColumns: "1.2fr 1fr",
+    gap: "14px",
+  },
+
+  chartCard: {
+    padding: "18px",
+    borderRadius: "16px",
+    backgroundColor: "rgba(255,255,255,0.06)",
+    border: "1px solid rgba(255,255,255,0.12)",
+  },
+
+  chartTitle: { margin: 0, marginBottom: "14px", fontSize: "1.05rem" },
+  chartLoading: { padding: "40px 0", textAlign: "center", color: "#cbd5f5" },
+
+  // Bar chart
+  barChart: {
+    display: "flex",
+    alignItems: "flex-end",
+    gap: "14px",
+    height: "220px",
+  },
+
+  barCol: {
+    flex: 1,
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    gap: "6px",
+  },
+
+  barTrack: {
+    width: "100%",
+    height: "160px",
+    borderRadius: "12px",
+    backgroundColor: "rgba(255,255,255,0.08)",
+    border: "1px solid rgba(255,255,255,0.12)",
+    display: "flex",
+    alignItems: "flex-end",
+    overflow: "hidden",
+  },
+
+  barFill: {
+    width: "100%",
+    backgroundColor: "#2563eb",
+    borderRadius: "12px",
+    transition: "height 0.5s ease",
+  },
+
+  barLabel: { fontSize: "0.8rem", color: "#cbd5f5" },
+  barValue: { fontSize: "0.85rem", fontWeight: 700 },
+
+  // Line chart
+  lineChart: { display: "flex", flexDirection: "column", gap: "12px" },
+
+  lineRow: { display: "flex", alignItems: "center", gap: "12px" },
+
+  lineLeft: {
+    width: "90px",
+    display: "flex",
+    justifyContent: "space-between",
+    color: "#cbd5f5",
+    fontSize: "0.85rem",
+  },
+
+  lineLabel: { fontWeight: 600 },
+  lineNumber: { fontWeight: 800, color: "white" },
+
+  lineTrack: {
+    flex: 1,
+    height: "12px",
+    borderRadius: "999px",
+    backgroundColor: "rgba(255,255,255,0.08)",
+    border: "1px solid rgba(255,255,255,0.12)",
+    overflow: "hidden",
+  },
+
+  lineFill: {
+    height: "100%",
+    backgroundColor: "#22c55e",
+    borderRadius: "999px",
+    transition: "width 0.5s ease",
+  },
+
+  note: {
+    marginTop: "8px",
+    color: "#cbd5f5",
+    fontSize: "0.85rem",
+    opacity: 0.9,
+  },
 };
