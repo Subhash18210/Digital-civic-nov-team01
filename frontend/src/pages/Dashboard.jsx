@@ -11,6 +11,13 @@ export default function Dashboard() {
   const { user } = useContext(AuthContext);
   const navigate = useNavigate();
 
+  // ✅ REDIRECT OFFICIALS TO OFFICIAL DASHBOARD
+  useEffect(() => {
+    if (user && user.role === 'official') {
+      navigate('/officialDashboard', { replace: true });
+    }
+  }, [user, navigate]);
+
   // State to store real data counts
   const [stats, setStats] = useState({
     myPetitions: 0,
@@ -22,40 +29,42 @@ export default function Dashboard() {
 
   // --- FETCH DATA ON LOAD ---
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const { data } = await API.get('/petitions');
-        const allPetitions = data.petitions || data || [];
-
-        const myCount = allPetitions.filter(p => 
-           (p.creator?._id === user?._id) || (p.creator === user?._id)
-        ).length;
-
-        const successCount = allPetitions.filter(p => p.status === 'closed').length;
-
-        let pollsCount = 0;
+    // Only fetch if user is NOT an official
+    if (user && user.role !== 'official') {
+      const fetchData = async () => {
         try {
-            const pollRes = await API.get('/polls');
-            const allPolls = pollRes.data.data || pollRes.data || [];
-            pollsCount = allPolls.filter(p => 
-                (p.createdBy?._id === user?._id) || (p.createdBy === user?._id)
-            ).length;
-        } catch (e) {
-            console.log("Polls API not ready yet");
+          const { data } = await API.get('/petitions');
+          const allPetitions = data.petitions || data || [];
+
+          const myCount = allPetitions.filter(p => 
+             (p.creator?._id === user?._id) || (p.creator === user?._id)
+          ).length;
+
+          const successCount = allPetitions.filter(p => p.status === 'closed').length;
+
+          let pollsCount = 0;
+          try {
+              const pollRes = await API.get('/polls');
+              const allPolls = pollRes.data.data || pollRes.data || [];
+              pollsCount = allPolls.filter(p => 
+                  (p.createdBy?._id === user?._id) || (p.createdBy === user?._id)
+              ).length;
+          } catch (e) {
+              console.log("Polls API not ready yet");
+          }
+
+          setStats({
+            myPetitions: myCount,
+            successfulPetitions: successCount,
+            pollsCreated: pollsCount
+          });
+
+        } catch (err) {
+          console.error("Error loading dashboard stats:", err);
         }
-
-        setStats({
-          myPetitions: myCount,
-          successfulPetitions: successCount,
-          pollsCreated: pollsCount
-        });
-
-      } catch (err) {
-        console.error("Error loading dashboard stats:", err);
-      }
-    };
-
-    if (user) fetchData();
+      };
+      fetchData();
+    }
   }, [user]);
 
   // --- NAVIGATION HANDLERS ---
@@ -72,8 +81,6 @@ export default function Dashboard() {
        navigate('/polls');
     }
   };
-
-  
 
   return (
     <div style={styles.container}>

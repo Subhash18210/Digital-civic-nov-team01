@@ -21,8 +21,13 @@ export default function Login() {
     setError("");
     setLoading(true);
     try {
-      await login(formData);
-      navigate("/dashboard");
+      const user = await login(formData);
+      // After successful login:
+      if (user?.role === 'official') {
+        navigate('/official-dashboard');
+      } else {
+        navigate('/dashboard');
+      }
     } catch (err) {
       setError(err.response?.data?.message || "Login failed. Check your details.");
     } finally {
