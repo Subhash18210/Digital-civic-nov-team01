@@ -10,6 +10,7 @@ import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
+import OfficialDashboard from "./pages/OfficialDashboard";
 
 // Petition Pages
 import PetitionList from "./pages/PetitionList";
