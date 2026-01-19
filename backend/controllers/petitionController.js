@@ -105,3 +105,82 @@ exports.signPetition = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+// @desc    Update petition status (Official Only)
+// @route   PATCH /api/petitions/:id
+// @route   PUT /api/petitions/:id
+// @access  Private (Official)
+exports.updatePetitionStatus = async (req, res) => {
+  try {
+    const { status } = req.body;
+
+    // Validate status
+    if (!['active', 'under_review', 'closed'].includes(status)) {
+      return res.status(400).json({ message: 'Invalid status' });
+    }
+
+    // Check if user is official
+    if (req.user.role !== 'official') {
+      return res.status(403).json({ message: 'Only officials can update petition status' });
+    }
+
+    const petition = await Petition.findByIdAndUpdate(
+      req.params.id,
+      { status },
+      { new: true }
+    ).populate('creator', 'name email');
+
+    if (!petition) {
+      return res.status(404).json({ message: 'Petition not found' });
+    }
+
+    res.status(200).json(petition);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Submit official response to petition
+// @route   POST /api/petitions/:id/response
+// @access  Private (Official)
+exports.submitResponse = async (req, res) => {
+  try {
+    const { response, status } = req.body;
+
+    // Check if user is official
+    if (req.user.role !== 'official') {
+      return res.status(403).json({ message: 'Only officials can submit responses' });
+    }
+
+    // Validate input
+    if (!response || !status) {
+      return res.status(400).json({ message: 'Response and status are required' });
+    }
+
+    // Validate status
+    if (!['active', 'under_review', 'closed'].includes(status)) {
+      return res.status(400).json({ message: 'Invalid status' });
+    }
+
+    const petition = await Petition.findByIdAndUpdate(
+      req.params.id,
+      {
+        status,
+        officialResponse: {
+          text: response,
+          date: new Date(),
+          official: req.user.id
+        }
+      },
+      { new: true }
+    ).populate('creator', 'name email');
+
+    if (!petition) {
+      return res.status(404).json({ message: 'Petition not found' });
+    }
+
+    res.status(200).json(petition);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
