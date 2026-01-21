@@ -1,5 +1,6 @@
 const Petition = require('../models/Petition');
-const Signature = require('../models/Signature'); 
+const User = require('../models/User');
+const AdminLog = require('../models/AdminLog'); // ✅ CHECKLIST 1.2: Import Logging
 
 // @desc    Create a new petition
 // @route   POST /api/petitions
@@ -8,16 +9,15 @@ exports.createPetition = async (req, res) => {
   try {
     const { title, description, category, location } = req.body;
 
-    const newPetition = new Petition({
+    const petition = await Petition.create({
       title,
       description,
       category,
       location,
-      creator: req.user.id
+      creator: req.user._id
     });
 
-    const savedPetition = await newPetition.save();
-    res.status(201).json(savedPetition);
+    res.status(201).json(petition);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -25,8 +25,7 @@ exports.createPetition = async (req, res) => {
 
 // @desc    Get all petitions (with filtering)
 // @route   GET /api/petitions
-// @access  Public (or restricted for Officials)
-// RENAMED from 'getAllPetitions' to 'getPetitions' to match Route import
+// @access  Public (Officials see filtered view)
 exports.getPetitions = async (req, res) => {
   try {
     const { category, status, location } = req.query;
@@ -35,14 +34,19 @@ exports.getPetitions = async (req, res) => {
     // 1. Apply Filters
     if (category) query.category = category;
     if (status) query.status = status;
-    if (location) query.location = location;
+    
+    // Case-insensitive location search
+    if (location) query.location = { $regex: location, $options: 'i' };
 
-    // 2. Official Logic (Only see their own location)
+    // 2. Official Logic: If user is official, prioritizing their jurisdiction
+    // (Optional: You can enforce this strictly or just use it as a default)
     if (req.user && req.user.role === 'official') {
-      query.location = req.user.location;
+       query.location = { $regex: req.user.location, $options: 'i' };
     }
 
-    const petitions = await Petition.find(query).sort({ createdAt: -1 });
+    const petitions = await Petition.find(query)
+      .populate('creator', 'name')
+      .sort({ createdAt: -1 });
 
     res.status(200).json({ count: petitions.length, petitions });
   } catch (error) {
@@ -55,22 +59,15 @@ exports.getPetitions = async (req, res) => {
 // @access  Public
 exports.getPetitionById = async (req, res) => {
   try {
-    const petition = await Petition.findById(req.params.id).populate('creator', 'name email');
+    const petition = await Petition.findById(req.params.id)
+      .populate('creator', 'name email')
+      .populate('officialResponse.respondedBy', 'name email'); // ✅ Show Official Name
 
     if (!petition) {
       return res.status(404).json({ message: 'Petition not found' });
     }
 
-    // Get signature count
-    const signatureCount = await Signature.countDocuments({ petition: req.params.id });
-
-    // Combine data
-    const responseData = {
-      ...petition.toObject(),
-      signatureCount
-    };
-
-    res.status(200).json(responseData);
+    res.status(200).json(petition);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -81,47 +78,46 @@ exports.getPetitionById = async (req, res) => {
 // @access  Private (Citizen)
 exports.signPetition = async (req, res) => {
   try {
-    const petitionId = req.params.id;
-    const userId = req.user.id;
+    const petition = await Petition.findById(req.params.id);
 
-    const petition = await Petition.findById(petitionId);
     if (!petition) return res.status(404).json({ message: 'Petition not found' });
 
     // Check Status (Must be active)
-    // NOTE: If testing manually, you must set petition status to 'active' in DB first
     if (petition.status !== 'active') {
        return res.status(400).json({ message: 'Cannot sign. Petition is not active.' });
     }
 
-    // Check Duplicate
-    const existingSignature = await Signature.findOne({ petition: petitionId, user: userId });
-    if (existingSignature) {
+    // Check Duplicate (Using 'upvotes' array)
+    if (petition.upvotes.includes(req.user._id)) {
       return res.status(400).json({ message: 'You have already signed this petition.' });
     }
 
-    await Signature.create({ petition: petitionId, user: userId });
-    res.status(201).json({ message: 'Petition signed successfully' });
+    petition.upvotes.push(req.user._id);
+    await petition.save();
+
+    res.status(200).json({ 
+        message: 'Petition signed successfully', 
+        signatureCount: petition.upvotes.length 
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
+// ------------------------------------------------------------------
+// 🏛️ OFFICIAL / GOVERNANCE ACTIONS (Milestone 4)
+// ------------------------------------------------------------------
+
 // @desc    Update petition status (Official Only)
-// @route   PATCH /api/petitions/:id
 // @route   PUT /api/petitions/:id
 // @access  Private (Official)
 exports.updatePetitionStatus = async (req, res) => {
   try {
     const { status } = req.body;
 
-    // Validate status
+    // Validate Status
     if (!['active', 'under_review', 'closed'].includes(status)) {
       return res.status(400).json({ message: 'Invalid status' });
-    }
-
-    // Check if user is official
-    if (req.user.role !== 'official') {
-      return res.status(403).json({ message: 'Only officials can update petition status' });
     }
 
     const petition = await Petition.findByIdAndUpdate(
@@ -130,8 +126,19 @@ exports.updatePetitionStatus = async (req, res) => {
       { new: true }
     ).populate('creator', 'name email');
 
-    if (!petition) {
-      return res.status(404).json({ message: 'Petition not found' });
+    if (!petition) return res.status(404).json({ message: 'Petition not found' });
+
+    // ✅ LOG ACTION (Checklist 1.2)
+    // Only attempts logging if AdminLog model is correctly imported
+    try {
+        await AdminLog.create({
+            action: 'STATUS_UPDATE',
+            user: req.user._id,
+            petition: petition._id,
+            details: `Status changed to: ${status}`
+        });
+    } catch (logError) {
+        console.error("Failed to create AdminLog:", logError.message);
     }
 
     res.status(200).json(petition);
@@ -147,39 +154,47 @@ exports.submitResponse = async (req, res) => {
   try {
     const { response, status } = req.body;
 
-    // Check if user is official
-    if (req.user.role !== 'official') {
-      return res.status(403).json({ message: 'Only officials can submit responses' });
-    }
-
     // Validate input
     if (!response || !status) {
       return res.status(400).json({ message: 'Response and status are required' });
     }
 
-    // Validate status
+    // Validate status enum
     if (!['active', 'under_review', 'closed'].includes(status)) {
       return res.status(400).json({ message: 'Invalid status' });
     }
 
-    const petition = await Petition.findByIdAndUpdate(
-      req.params.id,
-      {
-        status,
-        officialResponse: {
-          text: response,
-          date: new Date(),
-          official: req.user.id
-        }
-      },
-      { new: true }
-    ).populate('creator', 'name email');
+    const petition = await Petition.findById(req.params.id);
+    if (!petition) return res.status(404).json({ message: 'Petition not found' });
 
-    if (!petition) {
-      return res.status(404).json({ message: 'Petition not found' });
+    // ✅ FIX: Use correct field names matching Petition.js Schema
+    petition.status = status;
+    petition.officialResponse = {
+      text: response,
+      respondedAt: new Date(),       // Matches Schema
+      respondedBy: req.user._id      // Matches Schema
+    };
+
+    await petition.save();
+
+    // ✅ LOG ACTION (Checklist 1.2)
+    try {
+        await AdminLog.create({
+            action: 'RESPONSE_SUBMITTED',
+            user: req.user._id,
+            petition: petition._id,
+            details: `Response: "${response.substring(0, 20)}..."`
+        });
+    } catch (logError) {
+        console.error("Failed to create AdminLog:", logError.message);
     }
 
-    res.status(200).json(petition);
+    // Return populated data
+    const updated = await Petition.findById(req.params.id)
+      .populate('creator', 'name email')
+      .populate('officialResponse.respondedBy', 'name email');
+
+    res.status(200).json(updated);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
