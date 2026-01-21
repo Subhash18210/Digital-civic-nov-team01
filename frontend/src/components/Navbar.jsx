@@ -128,7 +128,7 @@ const styles = {
   },
   
   logoutHint: {
-      color: "#f87171", // Red tint to indicate logout
+      color: "#f87171", // Red tint to indicate logout....
       display: "flex",
       alignItems: "center"
   },

@@ -19,7 +19,7 @@ This project aims to promote transparency and active citizenship by providing a 
 * **Duplicate Prevention:** Ensures a user cannot sign the same petition twice.
 * **Responsive UI:** Built with React and Lucide Icons for a clean interface.
 
----
+--
 
 ##  Tech Stack
 * **Frontend:** React.js, React Router, Axios, Tailwind CSS (optional/if used).
@@ -28,7 +28,7 @@ This project aims to promote transparency and active citizenship by providing a 
 * **Visualization & Maps:** Recharts (for Polls/Stats), Leaflet (for Location Maps).
 * **Authentication:** BCrypt (Password Hashing), JWT.
 
----
+--
 
 ##  Local Setup Guide
 

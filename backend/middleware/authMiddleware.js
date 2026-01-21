@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
-// 1. PROTECT (Checks if user is logged in)
+// 1. PROTECT (Checks if user is logged in)...
 const protect = async (req, res, next) => {
   let token;
 
